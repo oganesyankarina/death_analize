@@ -1,7 +1,8 @@
 import pandas as pd
 from connect_PostGres import cnx
 
-global df_death_finished, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS
+# global df_death_finished, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS
+
 
 def get_df_death_finished():
 
@@ -13,7 +14,9 @@ def get_df_death_finished():
     GENDERS = sorted(df_death_finished['gender'].unique())
     AGE_GROUPS = sorted(df_death_finished['age_group_death'].unique())
 
+    return df_death_finished, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS
+
 
 if __name__ == '__main__':
-    get_df_death_finished()
+    df_death_finished, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS = get_df_death_finished()
     print(YEARS, MONTHS, DATES[-3:], GENDERS, AGE_GROUPS)

@@ -2,6 +2,7 @@
 from datetime import date, datetime
 import logging
 import pandas as pd
+import openpyxl
 
 from connect_PostGres import cnx
 from ISU_death_functions import make_date, make_date_born_death, make_day_week_month_year_death, calculate_death_age
@@ -9,7 +10,7 @@ from ISU_death_functions import calculate_age_group, calculate_employee_group, m
 from ISU_death_functions import find_original_reason_mkb_group_name
 
 
-def death_preprocessing(save_to_sql=True):
+def death_preprocessing(save_to_sql=True, save_to_excel=False):
     start_time = datetime.now()
     program = 'death_preprocessing'
     logging.info('{} started'.format(program))
@@ -78,6 +79,12 @@ def death_preprocessing(save_to_sql=True):
     if save_to_sql:
         # Сохраняем предобработанные данные в БД
         df_death.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
+    if save_to_excel:
+        path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
+        result_file_name = f'{path}death_finished_{str(date.today())}.xlsx'
+        result_Sheet_Name = f'death_{str(date.today())}'
+        with pd.ExcelWriter(result_file_name, engine='openpyxl') as writer:
+            df_death.to_excel(writer, sheet_name=result_Sheet_Name, header=True, index=False, encoding='1251')
 
     print('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
     logging.info('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
@@ -85,15 +92,16 @@ def death_preprocessing(save_to_sql=True):
 
 
 if __name__ == '__main__':
-    df = death_preprocessing(save_to_sql=False)
+    df = death_preprocessing(save_to_sql=False, save_to_excel=True)
     # Корректируем даты, чтобы сохранить только полностью завершенный месяц
     dates_ = sorted(df['DATE'].unique())[:-1]
     df_ = df[df.DATE.isin(dates_)]
+
     # Сохраняем предобработанные данные в БД
     # df_.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
+
     # Сохраняем предобработанные данные в excel
-    import openpyxl
-    path = r'J:\~ 09_Машинное обучение_Прогноз показателей СЭР\Смертность\Ежемесячные данные по Смертности от МедСофт/'
+    path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
     file_name = f'{path}Смертность_МедСофт_{str(dates_[-1])}.xlsx'
     sheet_name = f'{str(dates_[-1])}'
     wb = openpyxl.Workbook()
