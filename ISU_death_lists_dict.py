@@ -82,5 +82,5 @@ df_Population.index = range(df_Population.shape[0])
 df_Population.columns = ['id', 'Feature', 'Region', 'Territory', 'GENDER', 'AGE_GROUP', 'Year', 'Population']
 
 if __name__ == '__main__':
-    print(df_death_finished.loc[len(df_death_finished) - 1])
-    print(f'Последние данные загружены за {DATES[-1]}')
+    print(df_Population.loc[len(df_Population) - 1])
+    print(MKB_GROUP_LIST[-1])

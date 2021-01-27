@@ -3,7 +3,8 @@ from datetime import date, datetime
 import statsmodels.api as sm
 import pandas as pd
 import logging
-from ISU_death_lists_dict import df_death_finished, df_Population, YEARS, REGION, DATES, MONTHS_dict, FIO_dict
+from ISU_death_lists_dict import df_Population, REGION, MONTHS_dict, FIO_dict
+from get_from_death_finished import df_death_finished, YEARS, DATES, get_df_death_finished
 from ISU_death_functions import time_factor_calculation
 from connect_PostGres import cnx
 
@@ -15,9 +16,9 @@ def death_rule_first_55():
     print('{} started'.format(program))
 
     # Расчет показателей
-
     # Расчет среднего возраста умерших
     # по Липецкой области
+    get_df_death_finished()
     print('Средний возраст умерших в 2017-2020гг. {}'.format(round(df_death_finished.age_death.mean(), 2)))
     for year in YEARS:
         print('Средний возраст умерших в {} {}'.format(year, round(
@@ -29,8 +30,7 @@ def death_rule_first_55():
         for year in YEARS[1:]:
             df_avg_age_death.loc[k] = {'Region': region, 'Year': year,
                                        'AvgAgeDeath': round(df_death_finished[df_death_finished.district_location.isin([region]) &
-                                                                              df_death_finished.year_death.isin([year])].age_death.mean(),
-                                                            2)}
+                                                                              df_death_finished.year_death.isin([year])].age_death.mean(), 2)}
             k += 1
             # в разрезе МО
     age = 55
@@ -119,7 +119,8 @@ def death_rule_first_55():
     _date = sorted(df_operating.DATE.unique())[-1]
     # за последний месяц
     df_operating[df_operating.Year.isin([year]) &
-                 df_operating.DATE.isin([_date])].sort_values('AmountDeath/Population*time_factor_month', ascending=False)
+                 df_operating.DATE.isin([_date])].sort_values('AmountDeath/Population*time_factor_month',
+                                                              ascending=False)
 
     # Поиск аномалий. ТРЕНД ЗА ПЕРИОД 2018-2020
     RESULTS = pd.DataFrame(columns=['Region', 'DATE', 'AmountDeath', 'Year', 'Month',
@@ -192,6 +193,7 @@ def death_rule_first_55():
                          'fio_recipient': fio}
 
         k += 1
+
     output.to_sql('test_output', cnx, if_exists='append', index_label='id')
 
     print('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
