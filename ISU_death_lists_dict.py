@@ -84,3 +84,4 @@ df_Population.columns = ['id', 'Feature', 'Region', 'Territory', 'GENDER', 'AGE_
 if __name__ == '__main__':
     print(df_Population.loc[len(df_Population) - 1])
     print(MKB_GROUP_LIST[-1])
+    print(REGION)

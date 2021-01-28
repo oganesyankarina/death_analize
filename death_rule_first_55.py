@@ -3,7 +3,6 @@ from datetime import date, datetime
 import statsmodels.api as sm
 import pandas as pd
 import logging
-import openpyxl
 from ISU_death_lists_dict import df_Population, REGION, MONTHS_dict, FIO_dict
 from get_from_death_finished import get_df_death_finished
 from ISU_death_functions import time_factor_calculation
@@ -16,26 +15,25 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
 
     start_time = datetime.now()
     program = 'death_rule_first_55+'
-    logging.info('{} started'.format(program))
-    print('{} started'.format(program))
+    logging.info(f'{program} started')
+    print(f'{program} started')
 
-    df_death_finished, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS = get_df_death_finished()
+    df_death, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS = get_df_death_finished()
 
     # Расчет показателей
     # Расчет среднего возраста умерших
     # по Липецкой области
-    print('Средний возраст умерших в 2017-2020гг. {}'.format(round(df_death_finished.age_death.mean(), 2)))
+    print(f'Средний возраст умерших в 2017-2020гг. {round(df_death.age_death.mean(), 2)}')
     for last_year in YEARS:
-        print('Средний возраст умерших в {} {}'.format(last_year, round(
-            df_death_finished[df_death_finished.year_death.isin([last_year])].age_death.mean(), 2)))
+        print(f'Средний возраст умерших в {last_year} {round(df_death[df_death.year_death.isin([last_year])].age_death.mean(), 2)}')
     # в разрезе МО
     df_avg_age_death = pd.DataFrame(columns=['Region', 'Year', 'AvgAgeDeath'])
     k = 0
     for region in REGION[:]:
         for last_year in YEARS[1:]:
             df_avg_age_death.loc[k] = {'Region': region, 'Year': last_year,
-                                       'AvgAgeDeath': round(df_death_finished[df_death_finished.district_location.isin([region]) &
-                                                                              df_death_finished.year_death.isin([last_year])].age_death.mean(), 2)}
+                                       'AvgAgeDeath': round(df_death[df_death.district_location.isin([region]) &
+                                                                     df_death.year_death.isin([last_year])].age_death.mean(), 2)}
             k += 1
 
     # в разрезе МО
@@ -44,16 +42,15 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
     k = 0
     for region in REGION[:]:
         for last_year in YEARS[1:]:
-            amount_death_in_old_age = len(df_death_finished[df_death_finished.district_location.isin([region]) &
-                                                            df_death_finished.year_death.isin([last_year]) &
-                                                            (df_death_finished.age_death >= age)])
-            all_death = len(df_death_finished[df_death_finished.district_location.isin([region]) & df_death_finished.year_death.isin([last_year])])
+            amount_death_in_old_age = len(df_death[df_death.district_location.isin([region]) &
+                                                   df_death.year_death.isin([last_year]) & (df_death.age_death >= age)])
+            all_death = len(df_death[df_death.district_location.isin([region]) & df_death.year_death.isin([last_year])])
             df_proportion_death_in_old_age.loc[k] = {'Region': region, 'Year': last_year,
                                                      'AmountDeathInOldAge': amount_death_in_old_age,
                                                      'AllDeath': all_death,
                                                      'ProportionDeathInOldAge': round(amount_death_in_old_age / all_death, 2)}
             k += 1
-    print('Доля смертей в возрасте {} лет и старше составляет {}%'.format(age, round(df_proportion_death_in_old_age.ProportionDeathInOldAge.mean(), 2) * 100))
+    print(f'Доля смертей в возрасте {age} лет и старше составляет {round(df_proportion_death_in_old_age.ProportionDeathInOldAge.mean(), 2) * 100}%')
 
     # Расчет доли населения старше 55 лет
     print(f'Расчет доли населения в возрасте старше {age} лет в разрезе муниципальных образований...')
@@ -82,8 +79,8 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
     for region in REGION[:]:
         for last_date in DATES:
             df_amount_death.loc[k] = {'Region': region, 'DATE': last_date,
-                                      'AmountDeath': len(df_death_finished[(df_death_finished['district_location'].isin([region])) &
-                                                                           (df_death_finished['DATE'].isin([last_date]))])}
+                                      'AmountDeath': len(df_death[(df_death['district_location'].isin([region])) &
+                                                                  (df_death['DATE'].isin([last_date]))])}
             k += 1
     for i in df_amount_death.index:
         df_amount_death.loc[i, 'Year'] = df_amount_death.loc[i, 'DATE'].year
@@ -180,7 +177,7 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
         recipient = 'Главный врач ЦРБ {}{}'.format(results_blowout.loc[i, 'Region'], corr)
         month = MONTHS_dict[results_blowout.loc[i, 'Month']]
         last_year = int(results_blowout.loc[i, 'Year'])
-        message = 'Проанализировать причины высокого уровня смертности в районе в период {} {} года'.format(month, last_year)
+        message = f'Проанализировать причины высокого уровня смертности в районе в период {month} {last_year} года'
         task_type = 'Смертность_П1_55+'
 
         if results_blowout.loc[i, 'DATE'].month == 12:
@@ -208,20 +205,16 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
         output.to_sql('test_output', cnx, if_exists='append', index_label='id')
     if save_to_excel:
         path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-        result_file_name = f'{path}death_rule_first_55_{str(date.today())}.xlsx'
-        wb = openpyxl.Workbook()
-        # Sheet_name = wb.sheetnames
-        wb.save(filename=result_file_name)
-        with pd.ExcelWriter(result_file_name, engine='openpyxl', mode='a') as writer:
+        with pd.ExcelWriter(f'{path}death_rule1_55_{str(date.today())}.xlsx', engine='openpyxl') as writer:
             RESULTS.to_excel(writer, sheet_name=f'П55+_{str(date.today())}', header=True, index=False, encoding='1251')
-        with pd.ExcelWriter(result_file_name, engine='openpyxl', mode='a') as writer:
+        with pd.ExcelWriter(f'{path}death_rule1_55_выбросы{str(date.today())}.xlsx', engine='openpyxl') as writer:
             results_blowout.to_excel(writer, sheet_name=f'П55+_выбросы_{str(date.today())}', header=True, index=False,
                                      encoding='1251')
 
-    print('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
-    print('Number of generated tasks {}'.format(len(output)))
-    logging.info('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
-    logging.info('Number of generated tasks {}'.format(len(output)))
+    print(f'{program} done. elapsed time {datetime.now() - start_time}')
+    print(f'Number of generated tasks {len(output)}')
+    logging.info(f'{program} done. elapsed time {datetime.now() - start_time}')
+    logging.info(f'Number of generated tasks {len(output)}')
 
 
 if __name__ == '__main__':

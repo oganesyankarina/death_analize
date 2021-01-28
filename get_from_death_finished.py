@@ -1,11 +1,8 @@
 import pandas as pd
 from connect_PostGres import cnx
 
-# global df_death_finished, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS
-
 
 def get_df_death_finished():
-
     # Данные после первоначальной предобработки из таблицы death_finished
     df_death_finished = pd.read_sql_query('''SELECT * FROM public."death_finished"''', cnx)
     YEARS = sorted(df_death_finished['year_death'].unique())

@@ -2,7 +2,6 @@
 from datetime import date, datetime
 import logging
 import pandas as pd
-import openpyxl
 
 from connect_PostGres import cnx
 from ISU_death_functions import make_date, make_date_born_death, make_day_week_month_year_death, calculate_death_age
@@ -13,8 +12,8 @@ from ISU_death_functions import find_original_reason_mkb_group_name
 def death_preprocessing(save_to_sql=True, save_to_excel=False):
     start_time = datetime.now()
     program = 'death_preprocessing'
-    logging.info('{} started'.format(program))
-    print('{} started'.format(program))
+    logging.info(f'{program} started')
+    print(f'{program} started')
 
     df_death = pd.read_sql_query('''SELECT * FROM death''', cnx)
 
@@ -81,12 +80,11 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
         df_death.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
     if save_to_excel:
         path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-        result_file_name = f'{path}death_finished_{str(date.today())}.xlsx'
-        result_Sheet_Name = f'death_{str(date.today())}'
-        with pd.ExcelWriter(result_file_name, engine='openpyxl') as writer:
-            df_death.to_excel(writer, sheet_name=result_Sheet_Name, header=True, index=False, encoding='1251')
+        with pd.ExcelWriter(f'{path}death_finished_{str(date.today())}.xlsx', engine='openpyxl') as writer:
+            df_death.to_excel(writer, sheet_name=f'death_{str(date.today())}',
+                              header=True, index=False, encoding='1251')
 
-    print('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
+    print(f'{program} done. elapsed time {datetime.now() - start_time}')
     logging.info('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
     return df_death
 
@@ -102,10 +100,5 @@ if __name__ == '__main__':
 
     # Сохраняем предобработанные данные в excel
     path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-    file_name = f'{path}Смертность_МедСофт_{str(dates_[-1])}.xlsx'
-    sheet_name = f'{str(dates_[-1])}'
-    wb = openpyxl.Workbook()
-    Sheet_name = wb.sheetnames
-    wb.save(filename=file_name)
-    with pd.ExcelWriter(file_name, engine='openpyxl', mode='a') as writer:
-        df_.to_excel(writer, sheet_name=sheet_name, header=True, index=False, encoding='1251')
+    with pd.ExcelWriter(f'{path}Смертность_МедСофт_{str(dates_[-1])}.xlsx', engine='openpyxl') as writer:
+        df_.to_excel(writer, sheet_name=f'{str(dates_[-1])}', header=True, index=False, encoding='1251')
