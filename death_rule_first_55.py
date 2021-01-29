@@ -118,12 +118,11 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
             df_operating.loc[i, 'AmountDeath'] / df_operating.loc[i, 'Population'] * 100000 * df_operating.loc[
                 i, 'time_factor_month'], 2)
 
-    # year = sorted(df_operating.Year.unique())[-1]
-    # last_date = sorted(df_operating.DATE.unique())[-1]
-    # за последний месяц
-    # df_operating[df_operating.Year.isin([year]) &
-    #             df_operating.DATE.isin([last_date])].sort_values('AmountDeath/Population*time_factor_month',
-    #                                                              ascending=False)
+    if save_to_excel:
+        path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
+        with pd.ExcelWriter(f'{path}amountdeath_{str(date.today())}.xlsx', engine='openpyxl') as writer:
+            df_operating.to_excel(writer, sheet_name=f'amountdeath_{str(date.today())}', header=True,
+                                  index=False, encoding='1251')
 
     # Поиск аномалий. ТРЕНД ЗА ПЕРИОД 2018-2020
     print('Поиск аномальных отклонений от тренда - уровень смертности не соответствует возрастной \
@@ -168,13 +167,13 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
         k = pd.read_sql_query('''SELECT * FROM public."test_output"''', cnx).id.max() + 1
 
     for i in results_blowout.index:
-
-        if (results_blowout.loc[i, 'Region'] == 'Липецк') | (results_blowout.loc[i, 'Region'] == 'Елец'):
+        mo = results_blowout.loc[i, 'Region']
+        if (mo == 'Липецк') | (mo == 'Елец'):
             corr = ''
         else:
             corr = ' район'
 
-        recipient = 'Главный врач ЦРБ {}{}'.format(results_blowout.loc[i, 'Region'], corr)
+        recipient = f'Главный врач ЦРБ {mo}{corr}'
         month = MONTHS_dict[results_blowout.loc[i, 'Month']]
         last_year = int(results_blowout.loc[i, 'Year'])
         message = f'Проанализировать причины высокого уровня смертности в районе в период {month} {last_year} года'
@@ -192,9 +191,9 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
 
         output.loc[k] = {'task_type': task_type,
                          'recipient': recipient,
-                         'message': 'ИСУ обычная {}'.format(message),
+                         'message': f'ИСУ обычная {message}',
                          'release': release,
-                         'deadline': '{}'.format(date.today() + pd.Timedelta(days=14)),
+                         'deadline': f'{date.today() + pd.Timedelta(days=14)}',
                          'title': 'Уровень смертности не соответствует возрастной структуре населения района',
                          'fio_recipient': fio}
 
