@@ -98,7 +98,7 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
     df_operating = df_operating.merge(df_proportion_elderly, how='left', on=['Region', 'Year'])
     # Если данные о численности еще отсутствуют, то берем данные за предыдущий год
     for i in df_operating.index:
-        if pd.isnull(df_operating.loc[i, 'Population']):
+        if df_operating.loc[i,'Population'] == 0:
             region = df_operating.loc[i, 'Region']
             year_null = df_operating.loc[i, 'Year']
             year_not_null = year_null - 1
@@ -110,7 +110,7 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
             year_null = df_operating.loc[i, 'Year']
             year_not_null = year_null - 1
             proportion_elderly = df_operating[df_operating.Region.isin([region]) &
-                                              df_operating.Year.isin([year_not_null])]['ProportionElderly70+'].values[0]
+                                              df_operating.Year.isin([year_not_null])]['ProportionElderly'].values[0]
             df_operating.loc[i, 'ProportionElderly'] = proportion_elderly
 
     for i in df_operating.index:

@@ -81,8 +81,8 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
     if save_to_excel:
         path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
         with pd.ExcelWriter(f'{path}death_finished_{str(date.today())}.xlsx', engine='openpyxl') as writer:
-            df_death.to_excel(writer, sheet_name=f'death_{str(date.today())}',
-                              header=True, index=False, encoding='1251')
+            df_death.to_excel(writer, sheet_name=f'death_{str(date.today())}', header=True, index=False,
+                              encoding='1251')
 
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
     logging.info('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
@@ -100,5 +100,5 @@ if __name__ == '__main__':
 
     # Сохраняем предобработанные данные в excel
     path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-    with pd.ExcelWriter(f'{path}Смертность_МедСофт_{str(dates_[-1])}.xlsx', engine='openpyxl') as writer:
+    with pd.ExcelWriter(f'{path}Смертность_МедСофт_{str(date.today())}.xlsx', engine='openpyxl') as writer:
         df_.to_excel(writer, sheet_name=f'{str(dates_[-1])}', header=True, index=False, encoding='1251')
