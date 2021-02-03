@@ -96,7 +96,7 @@ if __name__ == '__main__':
     df_ = df[df.DATE.isin(dates_)]
 
     # Сохраняем предобработанные данные в БД
-    # df_.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
+    df_.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
 
     # Сохраняем предобработанные данные в excel
     path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'

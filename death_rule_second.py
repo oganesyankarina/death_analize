@@ -62,16 +62,18 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
     # Рабочая таблица
     # Базовые вычисления
     df_operating = df_amount_death.merge(df_population_mo, how='left', on=['Region', 'Year'])
+
     print('Добавляем информацию о численности населения...')
     # Если данные о численности еще отсутствуют, то берем данные за предыдущий год
     for i in df_operating.index:
-        if pd.isnull(df_operating.loc[i, 'Population']):
+        if df_operating.loc[i, 'Population'] == 0:
             region = df_operating.loc[i, 'Region']
             YearNULL = df_operating.loc[i, 'Year']
             YearNotNULL = YearNULL - 1
             population = df_operating[df_operating.Region.isin([region]) &
                                       df_operating.Year.isin([YearNotNULL])].Population.values[0]
             df_operating.loc[i, 'Population'] = population
+
     print('Рассчитываем коэффициенты смертности...')
     for i in df_operating.index:
         df_operating.loc[i, 'AmountDeath/Population*time_factor_month'] = round(df_operating.loc[i, 'AmountDeathMKB'] /
@@ -87,9 +89,9 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
                                   index=False, encoding='1251')
 
     # Поиск аномалий. Рост смертности три периода подряд.
+    print('Ищем ситуации роста на протяжении трех месяцев...')
     df_Results = pd.DataFrame(columns=['Region', 'MKB', 'DATE', 'Year', 'Month', 'meaning_last3'])
     main_column = 'AmountDeath/Population*time_factor_month'
-
     k = 0
     for MKB_id in MKB_GROUP_LIST_MAIN:
         for region in REGION:
@@ -123,6 +125,7 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
     results_blowout = df_Results[df_Results.Year.isin([last_year]) & df_Results.DATE.isin([last_date])]
 
     # Формируем результат работы и записываем в БД
+    print('Формируем перечень задач, назначаем ответственных и сроки...')
     output = pd.DataFrame(columns=['recipient', 'message', 'deadline', 'release',
                                    'task_type', 'title', 'fio_recipient'])
 
@@ -179,14 +182,15 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
     logging.info(f'{program} done. elapsed time {datetime.now() - start_time}')
     logging.info(f'Number of generated tasks {len(output)}')
 
-    '''start_time = datetime.now()
+    start_time = datetime.now()
     program = 'death_rule_second_new2'
     logging.info(f'{program} started')
     print(f'{program} started')
-
+########################################################################################################################
+########################################################################################################################
     # Поиск аномалий.
 
-    # # Сравнение с аналогичным периодом прошлого года.
+    # Сравнение с аналогичным периодом прошлого года.
     df_Results = pd.DataFrame(columns=['Region', 'MKB', 'DATE', 'Year', 'Month', 'AmountDeathMKB_T',
                                        'AmountDeathMKB_T-1', 'AmountDeath/Population*time_factor_month_T',
                                        'AmountDeath/Population*time_factor_month_T-1', 'increase_deaths'])
@@ -200,8 +204,7 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
                     AmDeathMKB1 = temp.loc[i, 'AmountDeathMKB']
                     AmDeathMKB0 = temp[temp.DATE.isin([TheSamePeriodLastYear])]['AmountDeathMKB'].values[0]
                     AmountDeathMKB1 = temp.loc[i, 'AmountDeath/Population*time_factor_month']
-                    AmountDeathMKB0 = \
-                    temp[temp.DATE.isin([TheSamePeriodLastYear])]['AmountDeath/Population*time_factor_month'].values[0]
+                    AmountDeathMKB0 = temp[temp.DATE.isin([TheSamePeriodLastYear])]['AmountDeath/Population*time_factor_month'].values[0]
                     increase_deaths = round(AmountDeathMKB1 / AmountDeathMKB0, 2)
 
                     df_Results.loc[k] = {'Region': region, 'MKB': MKB_id,
@@ -225,52 +228,66 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
                                  (df_Results['AmountDeathMKB_T-1'] > MinimumAmountDeathMKBTheSamePeriodLastYear) &
                                  (df_Results.increase_deaths != np.inf)].sort_values('increase_deaths', ascending=False)
 
-    ##Формируем результат работы и записываем в БД
-    output = pd.DataFrame(
-        columns=['recipient', 'message', 'deadline', 'release', 'task_type', 'title', 'fio_recipient'])
+    # Формируем результат работы и записываем в БД
+    output = pd.DataFrame(columns=['recipient', 'message', 'deadline', 'release', 'task_type',
+                                   'title', 'fio_recipient'])
 
-    if len(pd.read_sql_query('''#SELECT * FROM public."test_output"''', cnx)) == 0:
-    '''    k = 0
+    if len(pd.read_sql_query('''SELECT * FROM public."test_output"''', cnx)) == 0:
+        k = 0
     else:
-        k = pd.read_sql_query('''#SELECT * FROM public."test_output"''', cnx).id.max() + 1
+        k = pd.read_sql_query('''SELECT * FROM public."test_output"''', cnx).id.max() + 1
 
-    '''for i in results_blowout.index:
+    for i in results_blowout.index:
+        mo = results_blowout.loc[i, 'Region']
+        MKB = results_blowout.loc[i, 'MKB']
 
-        if ((results_blowout.loc[i, 'Region'] == 'Липецк') | (results_blowout.loc[i, 'Region'] == 'Елец')):
+        if (mo == 'Липецк') | (mo == 'Елец'):
             corr = ''
         else:
             corr = 'район'
 
-        recipient = 'Главный врач ЦРБ {} {}'.format(results_blowout.loc[i, 'Region'], corr)
-        message = 'Проанализировать и принять меры по снижению смертности. В районе по сравнению с аналогичным периодом прошлого года наблюдается значительный рост смертности от заболеваний из Группы {}'.format(
-            results_blowout.loc[i, 'MKB'])
+        recipient = f'Главный врач ЦРБ {mo} {corr}'
+        message = f'Проанализировать и принять меры по снижению смертности. В районе по сравнению с аналогичным периодом прошлого года наблюдается значительный рост смертности от заболеваний из Группы {MKB}'
 
-        MKB_id = MKB_GROUP_LIST_MAIN.index(results_blowout.loc[i, 'MKB'])
-        task_type = 'Смертность_П2_new2_{}'.format(MKB_id)
+        MKB_id = MKB_GROUP_LIST_MAIN.index(MKB)
+        task_type = f'Смертность_П2_new2_{MKB_id}'
 
         if results_blowout.loc[i, 'DATE'].month == 12:
             release = date(results_blowout.loc[i, 'DATE'].year + 1, 1, 1)
         else:
             release = date(results_blowout.loc[i, 'DATE'].year, results_blowout.loc[i, 'DATE'].month + 1, 1)
 
-        title = 'Рост смертности от заболеваний из группы {} по сравнению с АППГ'.format(results_blowout.loc[i, 'MKB'])
+        title = f'Рост смертности от заболеваний из группы {MKB} по сравнению с АППГ'
         if recipient in FIO_dict.keys():
             FIO = FIO_dict[recipient]
         else:
             FIO = ''
         output.loc[k] = {'task_type': task_type,
                          'recipient': recipient,
-                         'message': 'ИСУ обычная {}'.format(message),
+                         'message': f'ИСУ обычная {message}',
                          'release': release,
                          'deadline': str(date.today() + pd.Timedelta(days=14)),
                          'title': title, 'fio_recipient': FIO}
         k += 1
-    output.to_sql('test_output', cnx, if_exists='append', index_label='id')
+
+    print('Сохраняем результаты...')
+    if save_to_sql:
+        output.to_sql('test_output', cnx, if_exists='append', index_label='id')
+    if save_to_excel:
+        path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
+        with pd.ExcelWriter(f'{path}death_rule2_sameperiod_{str(date.today())}.xlsx', engine='openpyxl') as writer:
+            df_Results.to_excel(writer, sheet_name=f'rule2_sameperiod_{str(date.today())}', header=True,
+                                index=False, encoding='1251')
+        with pd.ExcelWriter(f'{path}death_rule2_sameperiod_выбросы{str(date.today())}.xlsx',
+                            engine='openpyxl') as writer:
+            results_blowout.to_excel(writer, sheet_name=f'sameeperiod_выбросы_{str(date.today())}', header=True,
+                                     index=False, encoding='1251')
 
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
     print(f'Number of generated tasks {len(output)}')
     logging.info(f'{program} done. elapsed time {datetime.now() - start_time}')
-    logging.info(f'Number of generated tasks {len(output)}')'''
+    logging.info(f'Number of generated tasks {len(output)}')
+
 
 if __name__ == '__main__':
     death_rule_second_new(save_to_sql=False, save_to_excel=True)
