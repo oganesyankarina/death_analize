@@ -79,8 +79,10 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
 
     if save_to_sql:
         # Сохраняем предобработанные данные в БД
+        print('Сохраняем данные в базу данных')
         df_death.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
     if save_to_excel:
+        print('Сохраняем данные в файл')
         path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
         with pd.ExcelWriter(f'{path}death_finished_{str(date.today())}.xlsx', engine='openpyxl') as writer:
             df_death.to_excel(writer, sheet_name=f'death_{str(date.today())}', header=True, index=False,
@@ -100,11 +102,15 @@ if __name__ == '__main__':
     # Корректируем даты, чтобы сохранить только полностью завершенный месяц
     dates_ = sorted(df['DATE'].unique())[:-1]
     df_ = df[df.DATE.isin(dates_)]
-
     # Сохраняем предобработанные данные в БД
-    # df_.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
-
+    df_.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
     # Сохраняем предобработанные данные в excel
     path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
     with pd.ExcelWriter(f'{path}Смертность_МедСофт_{str(date.today())}.xlsx', engine='openpyxl') as writer:
         df_.to_excel(writer, sheet_name=f'{str(dates_[-1])}', header=True, index=False, encoding='1251')
+
+    # # Чтение данных из файла
+    # path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
+    # df = pd.read_excel(f'{path}Смертность_МедСофт_2021-02-17.xlsx', sheet_name=f'2021-01-01', header=0)
+    # # Сохраняем предобработанные данные в БД
+    # df.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
