@@ -5,6 +5,7 @@ import calendar
 from datetime import date
 from dateutil import relativedelta as rdelta
 from ISU_death_lists_dict import AgeGroupList, EmployeeAgeList, Main_MKB_dict, MKB_CODE_LIST, df_MKB
+from connect_PostGres import cnx
 
 warnings.filterwarnings('ignore')
 
@@ -159,3 +160,15 @@ def amount_days_in_month(date_input):
         is_the_end = False
 
     return is_the_end
+
+
+def get_db_last_index(name_db):
+    if len(pd.read_sql_query(f'''SELECT * FROM public.{name_db}''', cnx)) == 0:
+        k = 0
+    else:
+        k = pd.read_sql_query(f'''SELECT * FROM public.{name_db}''', cnx).id.max()+1
+    return k
+
+
+if __name__ == '__main__':
+    print(get_db_last_index('death'))
