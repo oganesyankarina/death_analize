@@ -5,6 +5,7 @@ import pandas as pd
 
 from connect_PostGres import cnx
 from ISU_death_lists_dict import FIO_dict, escalation_recipient_list, escalation_recipient_text
+from ISU_death_functions import get_db_last_index
 
 
 def death_escalation(save_to_sql=True, save_to_excel=False):
@@ -84,11 +85,11 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
     RESULTS_doctors = RESULTS[RESULTS.index.isin(doctors)]
     output = pd.DataFrame(columns=['escalation_recipient', 'task_type', 'original_recipient', 'message', 'release',
                                    'deadline', 'title', 'fio_recipient'])
-
-    if len(pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx)) == 0:
-        k = 0
-    else:
-        k = pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx).id.max()+1
+    k = get_db_last_index('death_escalation_output')
+    # if len(pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx)) == 0:
+    #     k = 0
+    # else:
+    #     k = pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx).id.max()+1
 
     for i in RESULTS_doctors.index:
         escalation_level = RESULTS_doctors.loc[i, 'escalation_level']
@@ -153,6 +154,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
         path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
         with pd.ExcelWriter(f'{path}death_escalation_output_{str(date.today())}.xlsx', engine='openpyxl') as writer:
             output.to_excel(writer, sheet_name=f'escalation_doctors', header=True, index=False, encoding='1251')
+
     print(f'Number of generated escalation tasks for doctors {len(output)}')
     logging.info(f'Number of generated escalation tasks for doctors {len(output)}')
 
@@ -161,10 +163,11 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
     output = pd.DataFrame(columns=['escalation_recipient', 'task_type', 'original_recipient', 'message', 'release',
                                    'deadline', 'title', 'fio_recipient'])
 
-    if len(pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx)) == 0:
-        k = 0
-    else:
-        k = pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx).id.max()+1
+    k = get_db_last_index('death_escalation_output')
+    # if len(pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx)) == 0:
+    #     k = 0
+    # else:
+    #     k = pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx).id.max()+1
 
     for i in RESULTS_leaders.index:
         escalation_level = RESULTS_leaders.loc[i, 'escalation_level']
@@ -208,6 +211,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
         path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
         with pd.ExcelWriter(f'{path}death_escalation_output_{str(date.today())}.xlsx', engine='openpyxl', mode='a') as writer:
             output.to_excel(writer, sheet_name=f'escalation_leaders', header=True, index=False, encoding='1251')
+
     print(f'Number of generated escalation tasks for leaders {len(output)}')
     logging.info(f'Number of generated escalation tasks for leaders {len(output)}')
 
