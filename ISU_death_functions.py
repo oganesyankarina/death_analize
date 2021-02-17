@@ -9,6 +9,10 @@ from ISU_death_lists_dict import AgeGroupList, EmployeeAgeList, Main_MKB_dict, M
 warnings.filterwarnings('ignore')
 
 
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Функции для предобработки данных
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 def make_date(df, date_col):
     for col in date_col:
         df[col] = df[col].apply(pd.to_datetime)
@@ -124,7 +128,9 @@ def time_factor_calculation(year, month):
 
     return time_factor_month, time_factor_period
 
-
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Функции для main (проверка на последний день месяца)
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def amount_days_in_month(date_input):
     date_ = pd.to_datetime(date_input)
     year = date_.year
@@ -136,7 +142,6 @@ def amount_days_in_month(date_input):
     elif month in [4, 6, 9, 11]:
         num = 30
     elif month == 2:
-        # year=int(input("Since it's february, what year is it:"))
         if calendar.isleap(year):
             num = 29
         else:

@@ -74,6 +74,14 @@ MONTHS_dict = dict(zip(MONTH_number, MONTH_name))
 df_FIO = pd.read_sql_query('''SELECT * FROM public."fio_recipient"''', cnx)
 FIO_dict = dict(zip(df_FIO.position, df_FIO.fio))
 
+escalation_recipient_list = {1: 'Начальник Управления здравоохранения',
+                             2: 'Заместитель главы администрации (вопросы здравоохранения, соц.защиты, труда и занятости населения, демографической политики)',
+                             3: 'Глава администрации'}
+
+escalation_recipient_text = {1: 'Разобраться.',
+                             2: 'Принять меры.',
+                             3: 'Заслушать доклад.'}
+
 df_Population = pd.read_sql_query('''SELECT * FROM public."Population"''', cnx)
 df_Population = df_Population[(df_Population['Region'].isin(REGION)) &
                               (df_Population['Territory'].isin(['Все население'])) &
