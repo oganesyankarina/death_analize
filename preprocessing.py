@@ -50,12 +50,14 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
 
     df_death = df_death.drop(columns=['Дата рождения', 'Дата смерти', 'Место жительства', 'Место смерти'])
     df_death.columns = ['gender', 'reason_a', 'original_reason_a', 'reason_b', 'original_reason_b', 'reason_v',
-                        'original_reason_v', 'reason_g', 'original_reason_g', 'reason_d', 'date_born', 'date_death',
-                        'day_death', 'week_death', 'month_death', 'year_death', 'age_death', 'age_group_death',
-                        'employable_group', 'MKB_NAME_a', 'MKB_GROUP_NAME_a', 'MKB_NAME_b', 'MKB_GROUP_NAME_b',
-                        'MKB_NAME_v', 'MKB_GROUP_NAME_v', 'MKB_NAME_g', 'MKB_GROUP_NAME_g', 'MKB_NAME_d',
-                        'MKB_GROUP_NAME_d', 'locality_death', 'street_death', 'region_location', 'district_location',
-                        'locality_location', 'street_location']
+                        'original_reason_v', 'reason_g', 'original_reason_g', 'reason_d',
+                        'date_born', 'date_death', 'day_death', 'week_death', 'month_death', 'year_death',
+                        'age_death', 'age_group_death', 'employable_group',
+                        'MKB_NAME_a', 'MKB_GROUP_NAME_a', 'MKB_NAME_b', 'MKB_GROUP_NAME_b', 'MKB_NAME_v',
+                        'MKB_GROUP_NAME_v', 'MKB_NAME_g', 'MKB_GROUP_NAME_g', 'MKB_NAME_d', 'MKB_GROUP_NAME_d',
+                        'region_location', 'district_location', 'locality_location', 'street_location',
+                        'locality_death', 'street_death'
+                        ]
 
     df_death = df_death[df_death['region_location'].isin(['Липецкая'])]
     df_death.index = range(df_death.shape[0])
@@ -90,13 +92,17 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(filename='logfile.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s',
+                        level=logging.INFO)
+
     df = death_preprocessing(save_to_sql=False, save_to_excel=True)
+
     # Корректируем даты, чтобы сохранить только полностью завершенный месяц
     dates_ = sorted(df['DATE'].unique())[:-1]
     df_ = df[df.DATE.isin(dates_)]
 
     # Сохраняем предобработанные данные в БД
-    df_.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
+    # df_.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
 
     # Сохраняем предобработанные данные в excel
     path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
