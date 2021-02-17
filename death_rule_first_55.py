@@ -4,8 +4,8 @@ import statsmodels.api as sm
 import pandas as pd
 import logging
 from ISU_death_lists_dict import df_Population, REGION, MONTHS_dict, FIO_dict
-from get_from_death_finished import get_df_death_finished
-from ISU_death_functions import time_factor_calculation
+# from get_from_death_finished import get_df_death_finished
+from ISU_death_functions import time_factor_calculation, get_df_death_finished, get_db_last_index
 from connect_PostGres import cnx
 
 
@@ -161,10 +161,11 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
     output = pd.DataFrame(columns=['recipient', 'message', 'deadline', 'release',
                                    'task_type', 'title', 'fio_recipient'])
 
-    if len(pd.read_sql_query('''SELECT * FROM public."test_output"''', cnx)) == 0:
-        k = 0
-    else:
-        k = pd.read_sql_query('''SELECT * FROM public."test_output"''', cnx).id.max() + 1
+    k = get_db_last_index('test_output')
+    # if len(pd.read_sql_query('''SELECT * FROM public."test_output"''', cnx)) == 0:
+    #     k = 0
+    # else:
+    #     k = pd.read_sql_query('''SELECT * FROM public."test_output"''', cnx).id.max() + 1
 
     for i in results_blowout.index:
         mo = results_blowout.loc[i, 'Region']
