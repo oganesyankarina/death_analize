@@ -11,6 +11,7 @@ import statsmodels.api as sm
 import logging
 from ISU_death_functions import time_factor_calculation, amount_days_in_month
 from preprocessing import death_preprocessing
+from connect_PostGres import cnx
 
 warnings.filterwarnings('ignore')
 
@@ -22,20 +23,6 @@ logging.info('Start of the mortality analysis algorithm')
 start_time_ALL = datetime.now()
 print('Start of the mortality analysis algorithm')
 try:
-
-    POSTGRES_ADDRESS = '10.248.23.152'
-    POSTGRES_PORT = '5432'
-    POSTGRES_USERNAME = 'isu'
-    POSTGRES_PASSWORD = 'isupass'
-    POSTGRES_DBNAME = 'isu_db'
-
-    postgres_str = ('postgresql://{username}:{password}@{ipaddress}:{port}/{dbname}'.format(username=POSTGRES_USERNAME, 
-                                                                                            password=POSTGRES_PASSWORD, 
-                                                                                            ipaddress=POSTGRES_ADDRESS, 
-                                                                                            port=POSTGRES_PORT, 
-                                                                                            dbname=POSTGRES_DBNAME))
-    cnx = create_engine(postgres_str)
-
     lastDate = pd.read_sql_query('''SELECT MAX(death) FROM public."death"''', cnx).values[0]
     print(lastDate)
     #lastDate = date(2020,11,30)
