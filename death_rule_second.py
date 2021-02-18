@@ -291,4 +291,6 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(filename='logfile.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s',
+                        level=logging.INFO)
     death_rule_second_new(save_to_sql=False, save_to_excel=True)
