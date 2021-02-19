@@ -165,19 +165,22 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
     for i in results_blowout.index:
         recipient = make_recipient(results_blowout.loc[i, 'Region'])
         fio = make_recipient_fio(recipient)
-        task_type = 'Смертность_П1_55+'
         release = make_release_date(results_blowout.loc[i, 'DATE'])
+
+        task_type = 'Смертность_П1_55+'
 
         month = MONTHS_dict[results_blowout.loc[i, 'Month']]
         last_year = int(results_blowout.loc[i, 'Year'])
         message = f'Проанализировать причины высокого уровня смертности в районе в период {month} {last_year} года'
+
+        title = 'Уровень смертности не соответствует возрастной структуре населения района'
 
         output.loc[k] = {'task_type': task_type,
                          'recipient': recipient,
                          'message': f'ИСУ обычная {message}',
                          'release': release,
                          'deadline': f'{date.today() + pd.Timedelta(days=14)}',
-                         'title': 'Уровень смертности не соответствует возрастной структуре населения района',
+                         'title': title,
                          'fio_recipient': fio,
                          'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, recipient + message + str(release))
                          }
