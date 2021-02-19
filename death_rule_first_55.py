@@ -4,9 +4,10 @@ import statsmodels.api as sm
 import pandas as pd
 import logging
 from ISU_death_lists_dict import df_Population, REGION, MONTHS_dict, FIO_dict
-# from get_from_death_finished import get_df_death_finished
 from ISU_death_functions import time_factor_calculation, get_df_death_finished, get_db_last_index
 from connect_PostGres import cnx
+import uuid
+from make_task_table import make_recipient, make_corr_for_recipient, make_release_date, make_recipient_fio
 
 
 def death_rule_first_55(save_to_sql=True, save_to_excel=False):
@@ -159,36 +160,17 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
     # Формируем результат работы и записываем в БД
     print('Формируем перечень задач, назначаем ответственных и сроки...')
     output = pd.DataFrame(columns=['recipient', 'message', 'deadline', 'release',
-                                   'task_type', 'title', 'fio_recipient'])
-
+                                   'task_type', 'title', 'fio_recipient', 'uuid'])
     k = get_db_last_index('test_output')
-    # if len(pd.read_sql_query('''SELECT * FROM public."test_output"''', cnx)) == 0:
-    #     k = 0
-    # else:
-    #     k = pd.read_sql_query('''SELECT * FROM public."test_output"''', cnx).id.max() + 1
-
     for i in results_blowout.index:
-        mo = results_blowout.loc[i, 'Region']
-        if (mo == 'Липецк') | (mo == 'Елец'):
-            corr = ''
-        else:
-            corr = ' район'
+        recipient = make_recipient(results_blowout.loc[i, 'Region'])
+        fio = make_recipient_fio(recipient)
+        task_type = 'Смертность_П1_55+'
+        release = make_release_date(results_blowout.loc[i, 'DATE'])
 
-        recipient = f'Главный врач ЦРБ {mo}{corr}'
         month = MONTHS_dict[results_blowout.loc[i, 'Month']]
         last_year = int(results_blowout.loc[i, 'Year'])
         message = f'Проанализировать причины высокого уровня смертности в районе в период {month} {last_year} года'
-        task_type = 'Смертность_П1_55+'
-
-        if results_blowout.loc[i, 'DATE'].month == 12:
-            release = date(results_blowout.loc[i, 'DATE'].year + 1, 1, 1)
-        else:
-            release = date(results_blowout.loc[i, 'DATE'].year, results_blowout.loc[i, 'DATE'].month + 1, 1)
-
-        if recipient in FIO_dict.keys():
-            fio = FIO_dict[recipient]
-        else:
-            fio = ''
 
         output.loc[k] = {'task_type': task_type,
                          'recipient': recipient,
@@ -196,8 +178,9 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
                          'release': release,
                          'deadline': f'{date.today() + pd.Timedelta(days=14)}',
                          'title': 'Уровень смертности не соответствует возрастной структуре населения района',
-                         'fio_recipient': fio}
-
+                         'fio_recipient': fio,
+                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, recipient + message + str(release))
+                         }
         k += 1
 
     print('Сохраняем результаты...')
@@ -210,6 +193,9 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
         with pd.ExcelWriter(f'{path}death_rule1_55_выбросы{str(date.today())}.xlsx', engine='openpyxl') as writer:
             results_blowout.to_excel(writer, sheet_name=f'П55+_выбросы_{str(date.today())}', header=True, index=False,
                                      encoding='1251')
+        with pd.ExcelWriter(f'{path}death_rule1_output{str(date.today())}.xlsx', engine='openpyxl') as writer:
+            output.to_excel(writer, sheet_name=f'П55+_output_{str(date.today())}', header=True, index=False,
+                            encoding='1251')
 
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
     print(f'Number of generated tasks {len(output)}')
