@@ -111,8 +111,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
                          'deadline': str(date.today() + pd.Timedelta(days=14)),
                          'title': f'Эскалированная задача. {task}',
                          'fio_recipient': fio,
-                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS,
-                                            f'{fio}{release}{message}')}
+                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
         # Предупреждения на промежуточные уровни
         if escalation_level > 1:
             for j in range(1, escalation_level):
@@ -126,8 +125,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
                                                     'deadline': str(date.today() + pd.Timedelta(days=14)),
                                                     'title': f'Задача эскалирована на уровень - {escalation_recipient}.',
                                                     'fio_recipient': fio,
-                                                    'uuid': uuid.uuid3(uuid.NAMESPACE_DNS,
-                                                                       f'{fio}{release}{message}')}
+                                                    'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
         # Предупреждение для первоначального исполнителя
         fio = make_recipient_fio(original_recipient)
         message = f'ИСУ предупреждение Ваша задача эскалирована на уровень - {escalation_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
@@ -139,8 +137,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
                                           'deadline': str(date.today() + pd.Timedelta(days=14)),
                                           'title': f'Ваша задача эскалирована на уровень - {escalation_recipient}.',
                                           'fio_recipient': fio,
-                                          'uuid': uuid.uuid3(uuid.NAMESPACE_DNS,
-                                                             f'{fio}{release}{message}')}
+                                          'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
         k = k+1+escalation_level
 ########################################################################################################################
     if save_to_sql:
@@ -183,8 +180,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
                              'deadline': str(date.today() + pd.Timedelta(days=14)),
                              'title': f'Эскалированная задача. {task}',
                              'fio_recipient': fio,
-                             'uuid': uuid.uuid3(uuid.NAMESPACE_DNS,
-                                                f'{fio}{release}{message}')}
+                             'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
             # Предупреждение для первоначального исполнителя
             fio = make_recipient_fio(original_recipient)
             message = f'ИСУ предупреждение Ваша задача эскалирована на уровень - {escalation_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
@@ -196,8 +192,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
                                               'deadline': str(date.today() + pd.Timedelta(days=14)),
                                               'title': f'Ваша задача эскалирована на уровень - {escalation_recipient}.',
                                               'fio_recipient': fio,
-                                              'uuid': uuid.uuid3(uuid.NAMESPACE_DNS,
-                                                                 f'{fio}{release}{message}')}
+                                              'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
             k = k+2
 ########################################################################################################################
     if save_to_sql:
