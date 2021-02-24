@@ -140,7 +140,6 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
         output.loc[k] = {'task_type': task_type, 'recipient': recipient, 'message': f'ИСУ обычная {message}',
                          'release': release, 'deadline': str(date.today() + pd.Timedelta(days=14)),
                          'title': title, 'fio_recipient': fio,
-                         # 'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, fio + str(release) + f'ИСУ обычная {message}')
                          'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}')}
         k += 1
 ########################################################################################################################
@@ -168,6 +167,7 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
 ########################################################################################################################
 ########################################################################################################################
     # Поиск аномалий. Сравнение с аналогичным периодом прошлого года.
+    print('Ищем ситуации значительного роста по сравнению с аналогичным периодом прошлого года...')
     df_Results = pd.DataFrame(columns=['Region', 'MKB', 'DATE', 'Year', 'Month', 'AmountDeathMKB_T',
                                        'AmountDeathMKB_T-1', 'AmountDeath/Population*time_factor_month_T',
                                        'AmountDeath/Population*time_factor_month_T-1', 'increase_deaths'])
@@ -202,6 +202,7 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
                                  (df_Results.increase_deaths != np.inf)].sort_values('increase_deaths', ascending=False)
 ########################################################################################################################
     # Формируем результат работы и записываем в БД
+    print('Формируем перечень задач, назначаем ответственных и сроки...')
     output = pd.DataFrame(columns=['recipient', 'message', 'deadline', 'release', 'task_type',
                                    'title', 'fio_recipient', 'uuid'])
     k = get_db_last_index('test_output')
@@ -220,7 +221,6 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
         output.loc[k] = {'task_type': task_type, 'recipient': recipient, 'message': f'ИСУ обычная {message}',
                          'release': release, 'deadline': str(date.today() + pd.Timedelta(days=14)),
                          'title': title, 'fio_recipient': fio,
-                         # 'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, fio + str(release) + f'ИСУ обычная {message}')
                          'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}')}
         k += 1
 ########################################################################################################################
