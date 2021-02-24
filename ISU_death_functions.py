@@ -4,15 +4,38 @@ import pandas as pd
 import calendar
 from datetime import date
 from dateutil import relativedelta as rdelta
-from ISU_death_lists_dict import AgeGroupList, EmployeeAgeList, Main_MKB_dict, MKB_CODE_LIST, df_MKB
+
+
 from connect_PostGres import cnx
+from ISU_death_lists_dict import AgeGroupList, EmployeeAgeList, Main_MKB_dict, MKB_CODE_LIST, df_MKB
+from ISU_death_lists_dict import MONTHS_dict, FIO_dict, MKB_GROUP_LIST_MAIN, escalation_recipient_list
+
 
 warnings.filterwarnings('ignore')
+########################################################################################################################
+# Функции для работы с базой данных
+
+def get_db_last_index(name_db):
+    if len(pd.read_sql_query(f'''SELECT * FROM public.{name_db}''', cnx)) == 0:
+        k = 0
+    else:
+        k = pd.read_sql_query(f'''SELECT * FROM public.{name_db}''', cnx).id.max()+1
+    return k
 
 
-# /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+def get_df_death_finished():
+    # Данные после первоначальной предобработки из таблицы death_finished
+    df_death_finished = pd.read_sql_query('''SELECT * FROM public."death_finished"''', cnx)
+    YEARS = sorted(df_death_finished['year_death'].unique())
+    MONTHS = sorted(df_death_finished['month_death'].unique())
+    DATES = sorted(df_death_finished['DATE'].unique())
+    GENDERS = sorted(df_death_finished['gender'].unique())
+    AGE_GROUPS = sorted(df_death_finished['age_group_death'].unique())
+
+    return df_death_finished, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS
+########################################################################################################################
 # Функции для предобработки данных
-# /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 def make_date(df, date_col):
     for col in date_col:
@@ -110,7 +133,8 @@ def find_original_reason_mkb_group_name(df):
         else:
             df.loc[i, 'MKB_GROUP_NAME_original_reason'] = 'основная причина смерти не установлена'
     return df
-
+########################################################################################################################
+# Функции для правил
 
 def time_factor_calculation(year, month):
     year = int(year)
@@ -129,19 +153,8 @@ def time_factor_calculation(year, month):
 
     return time_factor_month, time_factor_period
 
-# /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+########################################################################################################################
 # Функции для main (проверка на последний день месяца)
-# /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-def get_df_death_finished():
-    # Данные после первоначальной предобработки из таблицы death_finished
-    df_death_finished = pd.read_sql_query('''SELECT * FROM public."death_finished"''', cnx)
-    YEARS = sorted(df_death_finished['year_death'].unique())
-    MONTHS = sorted(df_death_finished['month_death'].unique())
-    DATES = sorted(df_death_finished['DATE'].unique())
-    GENDERS = sorted(df_death_finished['gender'].unique())
-    AGE_GROUPS = sorted(df_death_finished['age_group_death'].unique())
-
-    return df_death_finished, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS
 
 def amount_days_in_month(date_input):
     date_ = pd.to_datetime(date_input)
@@ -171,14 +184,41 @@ def amount_days_in_month(date_input):
         is_the_end = False
 
     return is_the_end
+########################################################################################################################
+# Функции для подготовки таблиц с задачами
 
 
-def get_db_last_index(name_db):
-    if len(pd.read_sql_query(f'''SELECT * FROM public.{name_db}''', cnx)) == 0:
-        k = 0
+def make_corr_for_recipient(mo):
+    if (mo == 'Липецк') | (mo == 'Елец'):
+        return ''
     else:
-        k = pd.read_sql_query(f'''SELECT * FROM public.{name_db}''', cnx).id.max()+1
-    return k
+        return ' район'
+
+
+def make_recipient(mo):
+    corr_ = make_corr_for_recipient(mo)
+    return f'Главный врач ЦРБ {mo}{corr_}'
+
+
+def make_recipient_fio(recipient_):
+    if recipient_ in FIO_dict.keys():
+        return FIO_dict[recipient_]
+    else:
+        return ''
+
+
+def make_escalation_recipient_fio(escalation_level_):
+        if escalation_recipient_list[escalation_level_] in FIO_dict.keys():
+            fio = FIO_dict[escalation_recipient_list[escalation_level_]]
+        else:
+            fio = ''
+
+
+def make_release_date(date_):
+    if date_.month == 12:
+        return date(date_.year + 1, 1, 1)
+    else:
+        return date(date_.year, date_.month + 1, 1)
 
 
 if __name__ == '__main__':
