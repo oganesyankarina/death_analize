@@ -1,13 +1,14 @@
 # АНАЛИЗ СМЕРТНОСТИ ОТ ВСЕХ ПРИЧИН и ЗАВИСИМОСТЬ ОТ ДОЛИ НАСЕЛЕНИЯ В ВОЗРАСТЕ 55 ЛЕТ И СТАРШЕ
-from datetime import date, datetime
-import statsmodels.api as sm
 import pandas as pd
-import logging
-from ISU_death_lists_dict import df_Population, REGION, MONTHS_dict, FIO_dict
-from ISU_death_functions import time_factor_calculation, get_df_death_finished, get_db_last_index
-from connect_PostGres import cnx
 import uuid
-from make_task_table import make_recipient, make_corr_for_recipient, make_release_date, make_recipient_fio
+import logging
+import statsmodels.api as sm
+from datetime import date, datetime
+
+from connect_PostGres import cnx
+from ISU_death_lists_dict import df_Population, REGION, MONTHS_dict, FIO_dict, MKB_GROUP_LIST_MAIN, escalation_recipient_list
+from ISU_death_functions import time_factor_calculation, get_df_death_finished, get_db_last_index
+from ISU_death_functions import make_recipient, make_corr_for_recipient, make_release_date, make_recipient_fio
 
 
 def death_rule_first_55(save_to_sql=True, save_to_excel=False):
@@ -15,7 +16,7 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
     age = 55
 
     start_time = datetime.now()
-    program = 'death_rule_first_55+'
+    program = f'death_rule_first_{age}+'
     logging.info(f'{program} started')
     print(f'{program} started')
 
@@ -36,7 +37,6 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
                                        'AvgAgeDeath': round(df_death[df_death.district_location.isin([region]) &
                                                                      df_death.year_death.isin([last_year])].age_death.mean(), 2)}
             k += 1
-
     # в разрезе МО
     df_proportion_death_in_old_age = pd.DataFrame(columns=['Region', 'Year', 'AmountDeathInOldAge', 'AllDeath',
                                                            'ProportionDeathInOldAge'])
@@ -99,7 +99,7 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
     df_operating = df_operating.merge(df_proportion_elderly, how='left', on=['Region', 'Year'])
     # Если данные о численности еще отсутствуют, то берем данные за предыдущий год
     for i in df_operating.index:
-        if df_operating.loc[i,'Population'] == 0:
+        if df_operating.loc[i, 'Population'] == 0:
             region = df_operating.loc[i, 'Region']
             year_null = df_operating.loc[i, 'Year']
             year_not_null = year_null - 1
@@ -121,10 +121,10 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
 
     if save_to_excel:
         path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-        with pd.ExcelWriter(f'{path}amountdeath_{str(date.today())}.xlsx', engine='openpyxl') as writer:
-            df_operating.to_excel(writer, sheet_name=f'amountdeath_{str(date.today())}', header=True,
+        with pd.ExcelWriter(f'{path}amount_death_{str(date.today())}.xlsx', engine='openpyxl') as writer:
+            df_operating.to_excel(writer, sheet_name=f'amount_death_{str(date.today())}', header=True,
                                   index=False, encoding='1251')
-
+########################################################################################################################
     # Поиск аномалий. ТРЕНД ЗА ПЕРИОД 2018-2020
     print('Поиск аномальных отклонений от тренда - уровень смертности не соответствует возрастной \
 структуре муниципального образования')
@@ -151,12 +151,11 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
                               'Deviation from trend'].std())].sort_values(['Month', 'Deviation from trend'],
                                                                           ascending=False)
     blowout = pd.concat([blowout, blowout_])
-
+    # аномалии за последний месяц
     last_year = sorted(df_Results.Year.unique())[-1]
     last_date = sorted(df_Results.DATE.unique())[-1]
-    # аномалии за последний месяц
     results_blowout = blowout[blowout.Year.isin([last_year]) & blowout.DATE.isin([last_date])]
-
+########################################################################################################################
     # Формируем результат работы и записываем в БД
     print('Формируем перечень задач, назначаем ответственных и сроки...')
     output = pd.DataFrame(columns=['recipient', 'message', 'deadline', 'release',
@@ -168,24 +167,18 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
         release = make_release_date(results_blowout.loc[i, 'DATE'])
 
         task_type = 'Смертность_П1_55+'
-
+        title = 'Уровень смертности не соответствует возрастной структуре населения района'
         month = MONTHS_dict[results_blowout.loc[i, 'Month']]
         last_year = int(results_blowout.loc[i, 'Year'])
         message = f'Проанализировать причины высокого уровня смертности в районе в период {month} {last_year} года'
 
-        title = 'Уровень смертности не соответствует возрастной структуре населения района'
-
-        output.loc[k] = {'task_type': task_type,
-                         'recipient': recipient,
-                         'message': f'ИСУ обычная {message}',
-                         'release': release,
-                         'deadline': f'{date.today() + pd.Timedelta(days=14)}',
-                         'title': title,
-                         'fio_recipient': fio,
-                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, recipient + message + str(release))
+        output.loc[k] = {'task_type': task_type, 'recipient': recipient, 'message': f'ИСУ обычная {message}',
+                         'release': release, 'deadline': str(date.today() + pd.Timedelta(days=14)),
+                         'title': title, 'fio_recipient': fio,
+                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}')
                          }
         k += 1
-
+########################################################################################################################
     print('Сохраняем результаты...')
     if save_to_sql:
         output.to_sql('test_output', cnx, if_exists='append', index_label='id')
@@ -199,11 +192,12 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
         with pd.ExcelWriter(f'{path}death_rule1_output{str(date.today())}.xlsx', engine='openpyxl') as writer:
             output.to_excel(writer, sheet_name=f'П55+_output_{str(date.today())}', header=True, index=False,
                             encoding='1251')
-
+########################################################################################################################
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
     print(f'Number of generated tasks {len(output)}')
     logging.info(f'{program} done. elapsed time {datetime.now() - start_time}')
     logging.info(f'Number of generated tasks {len(output)}')
+########################################################################################################################
 
 
 if __name__ == '__main__':
