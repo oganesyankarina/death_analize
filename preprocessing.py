@@ -25,28 +25,27 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
                         'Причина а) КОД МКБ', 'Является первоначальной а)', 'Причина б)', 'Является первоначальной б)',
                         'Причина в)', 'Является первоначальной в)', 'Причина г)', 'Является первоначальной г)',
                         'Причина II (д)']
-
+    print('Обрабатываем даты рождения и смерти...')
     date_col = ['Дата рождения', 'Дата смерти']
     df_death = make_date(df_death, date_col)
     df_death = make_date_born_death(df_death, date_col)
     df_death = make_date(df_death, ['ДАТА_РОЖДЕНИЯ', 'ДАТА_СМЕРТИ'])
     df_death = make_day_week_month_year_death(df_death)
-    print('Обработаны даты рождения и смерти')
 
+    print('Обрабатываем возраст умершего...')
     df_death = calculate_death_age(df_death)
     df_death = calculate_age_group(df_death)
     df_death = calculate_employee_group(df_death)
-    print('Обработан возраст умершего')
 
+    print('Обрабатываем диагнозы...')
     df_death = make_mkb(df_death, 'Причина а) КОД МКБ', 'а) MKB_NAME', 'а) MKB_GROUP_NAME')
     df_death = make_mkb(df_death, 'Причина б)', 'б) MKB_NAME', 'б) MKB_GROUP_NAME')
     df_death = make_mkb(df_death, 'Причина в)', 'в) MKB_NAME', 'в) MKB_GROUP_NAME')
     df_death = make_mkb(df_death, 'Причина г)',  'г) MKB_NAME', 'г) MKB_GROUP_NAME')
     df_death = make_mkb(df_death, 'Причина II (д)', 'д) MKB_NAME', 'д) MKB_GROUP_NAME')
-    print('Обработаны диагнозы')
 
+    print('Обрабатываем адреса...')
     df_death = make_address(df_death, 'Место жительства', 'Место смерти')
-    print('Обработаны адреса')
 
     df_death = df_death.drop(columns=['Дата рождения', 'Дата смерти', 'Место жительства', 'Место смерти'])
     df_death.columns = ['gender', 'reason_a', 'original_reason_a', 'reason_b', 'original_reason_b', 'reason_v',
@@ -56,27 +55,28 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
                         'MKB_NAME_a', 'MKB_GROUP_NAME_a', 'MKB_NAME_b', 'MKB_GROUP_NAME_b', 'MKB_NAME_v',
                         'MKB_GROUP_NAME_v', 'MKB_NAME_g', 'MKB_GROUP_NAME_g', 'MKB_NAME_d', 'MKB_GROUP_NAME_d',
                         'region_location', 'district_location', 'locality_location', 'street_location',
-                        'locality_death', 'street_death'
-                        ]
-
+                        'locality_death', 'street_death']
     df_death = df_death[df_death['region_location'].isin(['Липецкая'])]
     df_death.index = range(df_death.shape[0])
     index_lipetsk = df_death[df_death['locality_location'] == 'Липецк'].index
     index_elec = df_death[df_death['locality_location'] == 'Елец'].index
     df_death.loc[index_lipetsk, 'district_location'] = 'Липецк'
     df_death.loc[index_elec, 'district_location'] = 'Елец'
-
+    print('Определяем первоначальную причину смерти...')
     for col in ['original_reason_a', 'original_reason_b', 'original_reason_v', 'original_reason_g']:
         df_death.loc[df_death[col] == 'True', col] = '1'
         df_death.loc[df_death[col] == 'False', col] = '0'
     df_death = find_original_reason_mkb_group_name(df_death)
-
-    # Добавляем столбец с ДАТОЙ в формате ГОД-МЕСЯЦ-1число для построения графиков
+    print('Добавляем столбец с ДАТОЙ в формате ГОД-МЕСЯЦ-1число для построения графиков')
     for i in df_death.index:
         year = df_death.loc[i, 'year_death']
         month = df_death.loc[i, 'month_death']
         df_death.loc[i, 'DATE'] = date(year, month, 1)
-
+########################################################################################################################
+    # Корректируем даты, чтобы сохранить только полностью завершенный месяц
+    dates_ = sorted(df_death['DATE'].unique())[:-1]
+    df_death = df_death[df_death.DATE.isin(dates_)]
+########################################################################################################################
     if save_to_sql:
         # Сохраняем предобработанные данные в БД
         print('Сохраняем данные в базу данных')
@@ -87,7 +87,7 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
         with pd.ExcelWriter(f'{path}death_finished_{str(date.today())}.xlsx', engine='openpyxl') as writer:
             df_death.to_excel(writer, sheet_name=f'death_{str(date.today())}', header=True, index=False,
                               encoding='1251')
-
+########################################################################################################################
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
     logging.info('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
     return df_death
@@ -98,19 +98,3 @@ if __name__ == '__main__':
                         level=logging.INFO)
 
     df = death_preprocessing(save_to_sql=False, save_to_excel=True)
-
-    # Корректируем даты, чтобы сохранить только полностью завершенный месяц
-    dates_ = sorted(df['DATE'].unique())[:-1]
-    df_ = df[df.DATE.isin(dates_)]
-    # Сохраняем предобработанные данные в БД
-    df_.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
-    # Сохраняем предобработанные данные в excel
-    path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-    with pd.ExcelWriter(f'{path}Смертность_МедСофт_{str(date.today())}.xlsx', engine='openpyxl') as writer:
-        df_.to_excel(writer, sheet_name=f'{str(dates_[-1])}', header=True, index=False, encoding='1251')
-
-    # # Чтение данных из файла
-    # path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-    # df = pd.read_excel(f'{path}Смертность_МедСофт_2021-02-17.xlsx', sheet_name=f'2021-01-01', header=0)
-    # # Сохраняем предобработанные данные в БД
-    # df.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
