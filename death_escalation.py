@@ -2,10 +2,11 @@
 from datetime import date, datetime
 import logging
 import pandas as pd
+import uuid
 
 from connect_PostGres import cnx
-from ISU_death_lists_dict import FIO_dict, escalation_recipient_list, escalation_recipient_text
-from ISU_death_functions import get_db_last_index
+from ISU_death_lists_dict import FIO_dict, MONTHS_dict, MKB_GROUP_LIST_MAIN, escalation_recipient_text, escalation_recipient_list
+from ISU_death_functions import get_db_last_index, make_escalation_recipient_fio, make_recipient_fio
 
 
 def death_escalation(save_to_sql=True, save_to_excel=False):
@@ -72,7 +73,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
                         'Проанализировать и принять меры по снижению смертности. ']
         for word in removal_list:
             RESULTS.loc[i, 'message'] = RESULTS.loc[i, 'message'].replace(word, '')
-
+########################################################################################################################
     doctors = []
     leaders = []
     for i in RESULTS.index:
@@ -80,73 +81,68 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
             doctors.append(i)
         if RESULTS.loc[i, 'recipient'].find('Глава МО') == 0:
             leaders.append(i)
-
+########################################################################################################################
     # Для главврачей
     RESULTS_doctors = RESULTS[RESULTS.index.isin(doctors)]
     output = pd.DataFrame(columns=['escalation_recipient', 'task_type', 'original_recipient', 'message', 'release',
-                                   'deadline', 'title', 'fio_recipient'])
+                                   'deadline', 'title', 'fio_recipient', 'uuid'])
     k = get_db_last_index('death_escalation_output')
-    # if len(pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx)) == 0:
-    #     k = 0
-    # else:
-    #     k = pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx).id.max()+1
 
     for i in RESULTS_doctors.index:
         escalation_level = RESULTS_doctors.loc[i, 'escalation_level']
+        escalation_recipient = escalation_recipient_list[escalation_level]
+
         original_recipient = RESULTS_doctors.loc[i, 'recipient']
+
         task = escalation_recipient_text[escalation_level]
+        task_type = RESULTS_doctors.loc[i, 'task_type']
+        release = RESULTS_doctors.loc[i, 'release']
 
-        if escalation_recipient_list[escalation_level] in FIO_dict.keys():
-            FIO = FIO_dict[escalation_recipient_list[escalation_level]]
-        else:
-            FIO = ''
+        message_insert = RESULTS_doctors.loc[i, 'message']
 
-        output.loc[k] = {'escalation_recipient': escalation_recipient_list[escalation_level],
-                         'task_type': RESULTS_doctors.loc[i, 'task_type'],
+        # Задача для получателя на уровень эскалации
+        fio = make_escalation_recipient_fio(escalation_level)
+        message = f'ИСУ эскалация Эскалированная задача. {task} Первоначальный исполнитель: {original_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
+        output.loc[k] = {'escalation_recipient': escalation_recipient,
+                         'task_type': task_type,
                          'original_recipient': original_recipient,
-                         'message': 'ИСУ эскалация Эскалированная задача. {} Первоначальный исполнитель: {}. Задача: {}. Задача повторяется {} месяца подряд.'.format(task,
-                                                                                                                                                                      original_recipient,
-                                                                                                                                                                      RESULTS_doctors.loc[i, 'message'],
-                                                                                                                                                                      (escalation_level+1)),
-                         'release': RESULTS_doctors.loc[i, 'release'],
+                         'message': message,
+                         'release': release,
                          'deadline': str(date.today() + pd.Timedelta(days=14)),
-                         'title': 'Эскалированная задача. {}'.format(task),
-                         'fio_recipient': FIO}
-
+                         'title': f'Эскалированная задача. {task}',
+                         'fio_recipient': fio,
+                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS,
+                                            f'{fio}{release}{message}')}
+        # Предупреждения на промежуточные уровни
         if escalation_level > 1:
             for j in range(1, escalation_level):
-                if escalation_recipient_list[escalation_level-j] in FIO_dict.keys():
-                    FIO = FIO_dict[escalation_recipient_list[escalation_level-j]]
-                else:
-                    FIO = ''
+                fio = make_escalation_recipient_fio(escalation_level-j)
+                message = f'ИСУ предупреждение Задача эскалирована на уровень - {escalation_recipient}. Первоначальный исполнитель: {original_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
                 output.loc[k+escalation_level-j] = {'escalation_recipient': escalation_recipient_list[escalation_level-j],
-                                                    'task_type': RESULTS_doctors.loc[i, 'task_type'],
+                                                    'task_type': task_type,
                                                     'original_recipient': original_recipient,
-                                                    'message': 'ИСУ предупреждение Задача эскалирована на уровень - {}. Первоначальный исполнитель: {}. Задача: {}. Задача повторяется {} месяца подряд.'.format(escalation_recipient_list[escalation_level],
-                                                                                                                                                                                                                 original_recipient,
-                                                                                                                                                                                                                 RESULTS_doctors.loc[i, 'message'],
-                                                                                                                                                                                                                 (escalation_level+1)),
-                                                    'release': RESULTS_doctors.loc[i, 'release'],
+                                                    'message': message,
+                                                    'release': release,
                                                     'deadline': str(date.today() + pd.Timedelta(days=14)),
-                                                    'title': 'Задача эскалирована на уровень - {}.'.format(escalation_recipient_list[escalation_level]),
-                                                    'fio_recipient': FIO}
-
-        if RESULTS_doctors.loc[i, 'recipient'] in FIO_dict.keys():
-            FIO = FIO_dict[RESULTS_doctors.loc[i, 'recipient']]
-        else:
-            FIO = ''
-        output.loc[k+escalation_level] = {'escalation_recipient': RESULTS_doctors.loc[i, 'recipient'],
-                                          'task_type': RESULTS_doctors.loc[i, 'task_type'],
-                                          'original_recipient': RESULTS_doctors.loc[i, 'recipient'],
-                                          'message': 'ИСУ предупреждение ' + 'Ваша задача эскалирована на уровень - {}. Задача: {}. Задача повторяется {} месяца подряд.'.format(escalation_recipient_list[escalation_level],
-                                                                                                                                                                                 RESULTS_doctors.loc[i, 'message'],
-                                                                                                                                                                                 (escalation_level+1)),
-                                          'release': RESULTS_doctors.loc[i, 'release'],
+                                                    'title': f'Задача эскалирована на уровень - {escalation_recipient}.',
+                                                    'fio_recipient': fio,
+                                                    'uuid': uuid.uuid3(uuid.NAMESPACE_DNS,
+                                                                       f'{fio}{release}{message}')}
+        # Предупреждение для первоначального исполнителя
+        fio = make_recipient_fio(original_recipient)
+        message = f'ИСУ предупреждение Ваша задача эскалирована на уровень - {escalation_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
+        output.loc[k+escalation_level] = {'escalation_recipient': original_recipient,
+                                          'task_type': task_type,
+                                          'original_recipient': original_recipient,
+                                          'message': message,
+                                          'release': release,
                                           'deadline': str(date.today() + pd.Timedelta(days=14)),
-                                          'title': 'Ваша задача эскалирована на уровень - {}.'.format(escalation_recipient_list[escalation_level]),
-                                          'fio_recipient': FIO}
+                                          'title': f'Ваша задача эскалирована на уровень - {escalation_recipient}.',
+                                          'fio_recipient': fio,
+                                          'uuid': uuid.uuid3(uuid.NAMESPACE_DNS,
+                                                             f'{fio}{release}{message}')}
         k = k+1+escalation_level
-
+########################################################################################################################
     if save_to_sql:
         # Сохраняем предобработанные данные в БД
         output.to_sql('death_escalation_output', cnx, if_exists='append', index_label='id')
@@ -154,56 +150,56 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
         path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
         with pd.ExcelWriter(f'{path}death_escalation_output_{str(date.today())}.xlsx', engine='openpyxl') as writer:
             output.to_excel(writer, sheet_name=f'escalation_doctors', header=True, index=False, encoding='1251')
-
+########################################################################################################################
     print(f'Number of generated escalation tasks for doctors {len(output)}')
     logging.info(f'Number of generated escalation tasks for doctors {len(output)}')
-
+########################################################################################################################
     # Для глав МО
     RESULTS_leaders = RESULTS[RESULTS.index.isin(leaders)]
     output = pd.DataFrame(columns=['escalation_recipient', 'task_type', 'original_recipient', 'message', 'release',
-                                   'deadline', 'title', 'fio_recipient'])
-
+                                   'deadline', 'title', 'fio_recipient', 'uuid'])
     k = get_db_last_index('death_escalation_output')
-    # if len(pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx)) == 0:
-    #     k = 0
-    # else:
-    #     k = pd.read_sql_query('''SELECT * FROM public."death_escalation_output"''', cnx).id.max()+1
 
     for i in RESULTS_leaders.index:
         escalation_level = RESULTS_leaders.loc[i, 'escalation_level']
+        escalation_recipient = escalation_recipient_list[escalation_level]
+
+        original_recipient = RESULTS_leaders.loc[i, 'recipient']
+
+        task = escalation_recipient_text[escalation_level]
+        task_type = RESULTS_leaders.loc[i, 'task_type']
+        release = RESULTS_leaders.loc[i, 'release']
+        message_insert = RESULTS_leaders.loc[i, 'message']
+
+        # Задача для получателя на уровень эскалации
         if escalation_level == 3:
-            if escalation_recipient_list[escalation_level] in FIO_dict.keys():
-                FIO = FIO_dict[escalation_recipient_list[escalation_level]]
-            else:
-                FIO = ''
-            output.loc[k] = {'escalation_recipient': escalation_recipient_list[escalation_level],
-                             'task_type': RESULTS_leaders.loc[i, 'task_type'],
-                             'original_recipient': RESULTS_leaders.loc[i, 'recipient'],
-                             'message': 'ИСУ эскалация ' + 'Эскалированная задача. {} Первоначальный исполнитель: {}. Задача: {}. Задача повторяется {} месяца подряд.'.format(escalation_recipient_text[escalation_level],
-                                                                                                                                                                               RESULTS_leaders.loc[i, 'recipient'],
-                                                                                                                                                                               RESULTS_leaders.loc[i, 'message'],
-                                                                                                                                                                               (escalation_level+1)),
-                             'release': RESULTS_leaders.loc[i, 'release'],
+            fio = make_escalation_recipient_fio(escalation_level)
+            message = f'ИСУ эскалация Эскалированная задача. {task} Первоначальный исполнитель: {original_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
+            output.loc[k] = {'escalation_recipient': escalation_recipient,
+                             'task_type': task_type,
+                             'original_recipient': original_recipient,
+                             'message': message,
+                             'release': release,
                              'deadline': str(date.today() + pd.Timedelta(days=14)),
-                             'title': 'Эскалированная задача. {}'.format(escalation_recipient_text[escalation_level]),
-                             'fio_recipient': FIO}
-
-            if RESULTS_leaders.loc[i, 'recipient'] in FIO_dict.keys():
-                FIO = FIO_dict[RESULTS_doctors.loc[i, 'recipient']]
-            else:
-                FIO = ''
-            output.loc[k+escalation_level] = {'escalation_recipient': RESULTS_leaders.loc[i, 'recipient'],
-                                              'task_type': RESULTS_leaders.loc[i, 'task_type'],
-                                              'original_recipient': RESULTS_leaders.loc[i, 'recipient'],
-                                              'message': 'ИСУ предупреждение ' + 'Ваша задача эскалирована на уровень - {}. Задача: {}. Задача повторяется {} месяца подряд.'.format(escalation_recipient_list[escalation_level],
-                                                                                                                                                                                     RESULTS_leaders.loc[i, 'message'],
-                                                                                                                                                                                     (escalation_level+1)),
-                                              'release': RESULTS_leaders.loc[i, 'release'],
+                             'title': f'Эскалированная задача. {task}',
+                             'fio_recipient': fio,
+                             'uuid': uuid.uuid3(uuid.NAMESPACE_DNS,
+                                                f'{fio}{release}{message}')}
+            # Предупреждение для первоначального исполнителя
+            fio = make_recipient_fio(original_recipient)
+            message = f'ИСУ предупреждение Ваша задача эскалирована на уровень - {escalation_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
+            output.loc[k+escalation_level] = {'escalation_recipient': original_recipient,
+                                              'task_type': task_type,
+                                              'original_recipient': original_recipient,
+                                              'message': message,
+                                              'release': release,
                                               'deadline': str(date.today() + pd.Timedelta(days=14)),
-                                              'title': 'Ваша задача эскалирована на уровень - {}.'.format(escalation_recipient_list[escalation_level]),
-                                              'fio_recipient': FIO}
+                                              'title': f'Ваша задача эскалирована на уровень - {escalation_recipient}.',
+                                              'fio_recipient': fio,
+                                              'uuid': uuid.uuid3(uuid.NAMESPACE_DNS,
+                                                                 f'{fio}{release}{message}')}
             k = k+2
-
+########################################################################################################################
     if save_to_sql:
         # Сохраняем предобработанные данные в БД
         output.to_sql('death_escalation_output', cnx, if_exists='append', index_label='id')
@@ -211,12 +207,13 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
         path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
         with pd.ExcelWriter(f'{path}death_escalation_output_{str(date.today())}.xlsx', engine='openpyxl', mode='a') as writer:
             output.to_excel(writer, sheet_name=f'escalation_leaders', header=True, index=False, encoding='1251')
-
+########################################################################################################################
     print(f'Number of generated escalation tasks for leaders {len(output)}')
     logging.info(f'Number of generated escalation tasks for leaders {len(output)}')
 
     print('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
     logging.info('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
+########################################################################################################################
 
 
 if __name__ == '__main__':
