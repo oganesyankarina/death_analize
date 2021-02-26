@@ -35,10 +35,10 @@ if __name__ == '__main__':
 
     try:
         print('The month is over. Start forming tasks ...')
-        death_preprocessing(save_to_sql=False, save_to_excel=False)
-        death_rule_first_55(save_to_sql=False, save_to_excel=False)
-        death_rule_second_new(save_to_sql=False, save_to_excel=False)
-        death_escalation(save_to_sql=False, save_to_excel=False)
+        death_preprocessing(save_to_sql=True, save_to_excel=False)
+        death_rule_first_55(save_to_sql=True, save_to_excel=False)
+        death_rule_second_new(save_to_sql=True, save_to_excel=False)
+        death_escalation(save_to_sql=True, save_to_excel=False)
         print(f'The end of the mortality analysis algorithm. elapsed time {datetime.now() - start_time_ALL}')
         logging.info(f'The end of the mortality analysis algorithm. elapsed time {datetime.now() - start_time_ALL}')
 
