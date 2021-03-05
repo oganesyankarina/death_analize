@@ -7,9 +7,10 @@ import uuid
 from connect_PostGres import cnx
 from ISU_death_lists_dict import FIO_dict, MONTHS_dict, MKB_GROUP_LIST_MAIN, escalation_recipient_text, escalation_recipient_list
 from ISU_death_functions import get_db_last_index, make_escalation_recipient_fio, make_recipient_fio
+from ISU_death_lists_dict import results_files_path, results_files_suff
 
 
-def death_escalation(save_to_sql=True, save_to_excel=False):
+def death_escalation(save_to_sql=True, save_to_excel=True):
     start_time = datetime.now()
     program = 'death_escalation'
     logging.info(f'{program} started')
@@ -144,8 +145,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
         # Сохраняем предобработанные данные в БД
         output.to_sql('death_escalation_output', cnx, if_exists='append', index_label='id')
     if save_to_excel:
-        path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-        with pd.ExcelWriter(f'{path}death_escalation_output_{str(date.today())}.xlsx', engine='openpyxl') as writer:
+        with pd.ExcelWriter(f'{results_files_path}death_escalation_output_{results_files_suff}.xlsx', engine='openpyxl') as writer:
             output.to_excel(writer, sheet_name=f'escalation_doctors', header=True, index=False, encoding='1251')
 ########################################################################################################################
     print(f'Number of generated escalation tasks for doctors {len(output)}')
@@ -199,8 +199,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
         # Сохраняем предобработанные данные в БД
         output.to_sql('death_escalation_output', cnx, if_exists='append', index_label='id')
     if save_to_excel:
-        path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-        with pd.ExcelWriter(f'{path}death_escalation_output_{str(date.today())}.xlsx', engine='openpyxl', mode='a') as writer:
+        with pd.ExcelWriter(f'{results_files_path}death_escalation_output_{results_files_suff}.xlsx', engine='openpyxl', mode='a') as writer:
             output.to_excel(writer, sheet_name=f'escalation_leaders', header=True, index=False, encoding='1251')
 ########################################################################################################################
     print(f'Number of generated escalation tasks for leaders {len(output)}')

@@ -4,12 +4,15 @@ import uuid
 import logging
 import statsmodels.api as sm
 from datetime import date, datetime
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from connect_PostGres import cnx
 
 from ISU_death_lists_dict import df_Population, REGION, MONTHS_dict
 from ISU_death_lists_dict import not_nan_filter, MKB_CODE_LIST, MKB_GROUP_LIST, MKB_GROUP_LIST_MAIN, df_MKB
 from ISU_death_lists_dict import FIO_dict, escalation_recipient_list, escalation_recipient_text, df_FIO
+from ISU_death_lists_dict import results_files_path, results_files_suff
 
 from ISU_death_functions import make_date, make_date_born_death, make_day_week_month_year_death, calculate_death_age
 from ISU_death_functions import calculate_age_group, calculate_employee_group, make_mkb, make_address
@@ -36,8 +39,8 @@ if __name__ == '__main__':
     try:
         print('The month is over. Start forming tasks ...')
         death_preprocessing(save_to_sql=True, save_to_excel=False)
-        death_rule_first_55(save_to_sql=True, save_to_excel=False)
-        death_rule_second_new(save_to_sql=True, save_to_excel=False)
+        death_rule_first_55(save_to_sql=True, save_to_excel=True)
+        death_rule_second_new(save_to_sql=True, save_to_excel=True)
         death_escalation(save_to_sql=True, save_to_excel=False)
         print(f'The end of the mortality analysis algorithm. elapsed time {datetime.now() - start_time_ALL}')
         logging.info(f'The end of the mortality analysis algorithm. elapsed time {datetime.now() - start_time_ALL}')

@@ -4,16 +4,19 @@ import numpy as np
 import uuid
 import logging
 from datetime import date, datetime
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from connect_PostGres import cnx
 from ISU_death_lists_dict import df_Population, REGION, MONTHS_dict, FIO_dict, MKB_GROUP_LIST_MAIN, escalation_recipient_list
 from ISU_death_functions import time_factor_calculation, get_df_death_finished, get_db_last_index
 from ISU_death_functions import make_recipient, make_corr_for_recipient, make_release_date, make_recipient_fio
+from ISU_death_lists_dict import results_files_path, results_files_suff
 
 
-def death_rule_second_new(save_to_sql=True, save_to_excel=False):
+def death_rule_second_new(save_to_sql=True, save_to_excel=True):
     start_time = datetime.now()
-    program = 'death_rule2_3monthgrow'
+    program = 'death_3monthgrow'
     logging.info(f'{program} started')
     print(f'{program} started')
 
@@ -82,14 +85,44 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
                                                                                 df_operating.loc[
                                                                                     i, 'time_factor_month'], 2)
 
-    if save_to_excel:
-        path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-        with pd.ExcelWriter(f'{path}amount_death_MKB_{str(date.today())}.xlsx', engine='openpyxl') as writer:
-            df_operating.to_excel(writer, sheet_name=f'amount_death_MKB_{str(date.today())}', header=True,
-                                  index=False, encoding='1251')
+    # if save_to_excel:
+    #     with pd.ExcelWriter(f'{results_files_path}amount_death_MKB_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+    #         df_operating.to_excel(writer, sheet_name=f'amount_death_MKB', header=True, index=False, encoding='1251')
+########################################################################################################################
+    print('Подготавливаем визуализацию...')
+    main_column = 'AmountDeath/Population*time_factor_month'
+    k_color = 0
+    fig = make_subplots(rows=len(MKB_GROUP_LIST_MAIN[:]), cols=1, specs=[[{}]] * len(MKB_GROUP_LIST_MAIN[:]),
+                        subplot_titles=MKB_GROUP_LIST_MAIN, shared_yaxes=True,
+                        vertical_spacing=0.02, horizontal_spacing=0.04)
+
+    for MKB_index in range(len(MKB_GROUP_LIST_MAIN[:])):
+        for Region in REGION:
+            if MKB_index == 0:
+                showlegend_Flag = True
+            else:
+                showlegend_Flag = False
+            temp = df_operating[df_operating.MKB.isin([MKB_GROUP_LIST_MAIN[MKB_index]]) &
+                                df_operating.Region.isin([Region])]
+            fig.add_trace(go.Scatter(x=temp.DATE.values[:], y=temp[main_column].values[:],
+                                     showlegend=showlegend_Flag, legendgroup=Region,
+                                     mode='lines+markers', name=Region, text=Region), row=MKB_index + 1, col=1)
+            fig.update_layout(showlegend=True)
+
+            if k_color == 7:
+                k_color = 0
+            else:
+                k_color += 1
+
+    fig.update_layout(height=2300,
+                      legend=dict(yanchor='bottom', xanchor='left', y=0.73, x=1.0, font=dict(size=10)),
+                      title=dict(text='Динамика смертности по группам МКБ в Липецкой области<br>(с учетом численности населения и временного коэффициента)',
+                                 font=dict(size=16), x=0.01, y=0.98, xanchor='left', yanchor='top'))
+    fig.write_html(f'{results_files_path}График_death_MKB_{results_files_suff}.html')
 ########################################################################################################################
     # Поиск аномалий. Рост смертности три периода подряд.
     print('Ищем ситуации роста на протяжении трех месяцев...')
+
     df_Results = pd.DataFrame(columns=['Region', 'MKB', 'DATE', 'Year', 'Month', 'meaning_last3'])
     main_column = 'AmountDeath/Population*time_factor_month'
     k = 0
@@ -143,17 +176,32 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
                          'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}')}
         k += 1
 ########################################################################################################################
+    attached_file = pd.DataFrame(columns=['task_uuid', 'file'])
+    k = get_db_last_index('attached_file_death')
+    for i in output.index:
+        uuid_ = output.loc[i, 'uuid']
+
+        attached_file.loc[k] = {'task_uuid': uuid_, 'file': f'death_3monthgrow_выбросы_{results_files_suff}.xlsx'}
+        attached_file.loc[k + 1] = {'task_uuid': uuid_, 'file': f'График_death_MKB_{results_files_suff}.html'}
+
+        k += 2
+########################################################################################################################
     print('Сохраняем результаты...')
     if save_to_sql:
         output.to_sql('test_output', cnx, if_exists='append', index_label='id')
+        attached_file.to_sql('attached_file_death', cnx, if_exists='append', index_label='id')
     if save_to_excel:
-        path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-        with pd.ExcelWriter(f'{path}death_rule2_3monthgrow_{str(date.today())}.xlsx', engine='openpyxl') as writer:
-            df_Results.to_excel(writer, sheet_name=f'rule2_3monthgrow_{str(date.today())}', header=True,
-                                index=False, encoding='1251')
-        with pd.ExcelWriter(f'{path}death_rule2_3monthgrow_выбросы{str(date.today())}.xlsx', engine='openpyxl') as writer:
-            results_blowout.to_excel(writer, sheet_name=f'3monthgrow_выбросы_{str(date.today())}', header=True,
-                                     index=False, encoding='1251')
+        # with pd.ExcelWriter(f'{results_files_path}death_3monthgrow_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+        #     df_Results.to_excel(writer, sheet_name=f'3monthgrow', header=True, index=False, encoding='1251')
+
+        with pd.ExcelWriter(f'{results_files_path}death_3monthgrow_выбросы_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+            results_blowout.to_excel(writer, sheet_name=f'3monthgrow_выбросы', header=True, index=False, encoding='1251')
+
+        with pd.ExcelWriter(f'{results_files_path}death_3monthgrow_output_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+            output.to_excel(writer, sheet_name=f'3monthgrow', header=True, index=False, encoding='1251')
+
+        with pd.ExcelWriter(f'{results_files_path}attached_file_death_3monthgrow_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+            attached_file.to_excel(writer, sheet_name=f'attached_file_3monthgrow', header=True, index=False, encoding='1251')
 ########################################################################################################################
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
     print(f'Number of generated tasks {len(output)}')
@@ -161,7 +209,7 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
     logging.info(f'Number of generated tasks {len(output)}')
 
     start_time = datetime.now()
-    program = 'death_rule_second_sameperiod'
+    program = 'death_sameperiod'
     logging.info(f'{program} started')
     print(f'{program} started')
 ########################################################################################################################
@@ -224,18 +272,32 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=False):
                          'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}')}
         k += 1
 ########################################################################################################################
+    attached_file = pd.DataFrame(columns=['task_uuid', 'file'])
+    k = get_db_last_index('attached_file_death')
+    for i in output.index:
+        uuid_ = output.loc[i, 'uuid']
+
+        attached_file.loc[k] = {'task_uuid': uuid_, 'file': f'death_sameperiod_выбросы_{results_files_suff}.xlsx'}
+        attached_file.loc[k + 1] = {'task_uuid': uuid_, 'file': f'График_death_MKB_{results_files_suff}.html'}
+
+        k += 2
+########################################################################################################################
     print('Сохраняем результаты...')
     if save_to_sql:
         output.to_sql('test_output', cnx, if_exists='append', index_label='id')
+        attached_file.to_sql('attached_file_death', cnx, if_exists='append', index_label='id')
     if save_to_excel:
-        path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-        with pd.ExcelWriter(f'{path}death_rule2_sameperiod_{str(date.today())}.xlsx', engine='openpyxl') as writer:
-            df_Results.to_excel(writer, sheet_name=f'rule2_sameperiod_{str(date.today())}', header=True,
-                                index=False, encoding='1251')
-        with pd.ExcelWriter(f'{path}death_rule2_sameperiod_выбросы{str(date.today())}.xlsx',
-                            engine='openpyxl') as writer:
-            results_blowout.to_excel(writer, sheet_name=f'sameperiod_выбросы_{str(date.today())}', header=True,
-                                     index=False, encoding='1251')
+        # with pd.ExcelWriter(f'{results_files_path}death_sameperiod_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+        #     df_Results.to_excel(writer, sheet_name=f'sameperiod', header=True, index=False, encoding='1251')
+
+        with pd.ExcelWriter(f'{results_files_path}death_sameperiod_выбросы_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+            results_blowout.to_excel(writer, sheet_name=f'sameperiod_выбросы', header=True, index=False, encoding='1251')
+
+        with pd.ExcelWriter(f'{results_files_path}death_sameperiod_output_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+            output.to_excel(writer, sheet_name=f'sameperiod_output', header=True, index=False, encoding='1251')
+
+        with pd.ExcelWriter(f'{results_files_path}attached_file_death_sameperiod_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+            attached_file.to_excel(writer, sheet_name=f'attached_file_sameperiod', header=True, index=False, encoding='1251')
 ########################################################################################################################
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
     print(f'Number of generated tasks {len(output)}')
