@@ -9,14 +9,18 @@ from connect_PostGres import cnx
 from ISU_death_lists_dict import df_Population, REGION, MONTHS_dict, FIO_dict, MKB_GROUP_LIST_MAIN, escalation_recipient_list
 from ISU_death_functions import time_factor_calculation, get_df_death_finished, get_db_last_index
 from ISU_death_functions import make_recipient, make_corr_for_recipient, make_release_date, make_recipient_fio
+from ISU_death_lists_dict import results_files_path, results_files_suff
+
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 
-def death_rule_first_55(save_to_sql=True, save_to_excel=False):
+def death_rule_first_55(save_to_sql=True, save_to_excel=True):
     # задаем возрастное ограничение
     age = 55
 
     start_time = datetime.now()
-    program = f'death_rule_first_{age}+'
+    program = f'death_elderly_{age}+'
     logging.info(f'{program} started')
     print(f'{program} started')
 
@@ -119,11 +123,10 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
             df_operating.loc[i, 'AmountDeath'] / df_operating.loc[i, 'Population'] * 100000 * df_operating.loc[
                 i, 'time_factor_month'], 2)
 
-    if save_to_excel:
-        path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-        with pd.ExcelWriter(f'{path}amount_death_{str(date.today())}.xlsx', engine='openpyxl') as writer:
-            df_operating.to_excel(writer, sheet_name=f'amount_death_{str(date.today())}', header=True,
-                                  index=False, encoding='1251')
+    # if save_to_excel:
+    #     with pd.ExcelWriter(f'{results_files_path}amount_death_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+    #         df_operating.to_excel(writer, sheet_name=f'amount_death', header=True,
+    #                               index=False, encoding='1251')
 ########################################################################################################################
     # Поиск аномалий. ТРЕНД ЗА ПЕРИОД 2018-2020
     print('Поиск аномальных отклонений от тренда - уровень смертности не соответствует возрастной \
@@ -144,7 +147,29 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
     for i in df_Results.index:
         df_Results.loc[i, 'Deviation from trend'] = df_Results.loc[i, 'AmountDeath/Population*time_factor_month'] - \
                                                     df_Results.loc[i, 'bestfit']
-
+########################################################################################################################
+    # Рисуем и сохраняем график регрессии
+    print('Подготавливаем визуализацию...')
+    fig = go.Figure()
+    text = []
+    for i in df_Results.index:
+        region = df_Results.loc[i, 'Region']
+        month = int(df_Results.loc[i, 'Month'])
+        year = int(df_Results.loc[i, 'Year'])
+        text.append(f'{region} Месяц: {month} Год: {year}')
+    fig.add_trace(go.Scatter(name='X vs Y',
+                             x=df_Results['ProportionElderly'],
+                             y=df_Results['AmountDeath/Population*time_factor_month'].values,
+                             mode='markers', text=text, hovertemplate='%{text}<br>Доля: %{x}<br>Коэф. смертности: %{y}'
+                             ))
+    fig.add_trace(go.Scatter(name='line of best fit',
+                             x=df_Results['ProportionElderly'], y=df_Results['bestfit'], mode='lines'
+                             ))
+    fig.update_layout(xaxis_title=f'Доля населения в возрасте {age} лет и старше',
+                      yaxis_title='Количество умерших за месяц/Численность населения<br>*100 тыс. чел.*Временной коэффициент',
+                      title=f'Соотношение Доля населения в возрасте {age} лет и старше и <br>Количество умерших за месяц/Численность населения*100 тыс. чел.*Временной коэффициент')
+    fig.write_html(f'{results_files_path}График_death_elderly_{results_files_suff}.html')
+########################################################################################################################
     RESULTS = pd.concat([RESULTS, df_Results])
     blowout_ = df_Results[(df_Results['AmountDeath/Population*time_factor_month'] > df_Results['bestfit']) &
                           (df_Results['Deviation from trend'] > 1.5 * df_Results[
@@ -179,19 +204,33 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=False):
                          }
         k += 1
 ########################################################################################################################
+    attached_file = pd.DataFrame(columns=['task_uuid', 'file'])
+    k = get_db_last_index('attached_file_death')
+    for i in output.index:
+        uuid_ = output.loc[i, 'uuid']
+
+        attached_file.loc[k] = {'task_uuid': uuid_, 'file': f'death_elderly_выбросы_{results_files_suff}.xlsx'}
+        attached_file.loc[k+1] = {'task_uuid': uuid_, 'file': f'График_death_elderly_{results_files_suff}.html'}
+
+        k += 2
+########################################################################################################################
     print('Сохраняем результаты...')
     if save_to_sql:
         output.to_sql('test_output', cnx, if_exists='append', index_label='id')
+        attached_file.to_sql('attached_file_death', cnx, if_exists='append', index_label='id')
+
     if save_to_excel:
-        path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-        with pd.ExcelWriter(f'{path}death_rule1_55_{str(date.today())}.xlsx', engine='openpyxl') as writer:
-            RESULTS.to_excel(writer, sheet_name=f'П55+_{str(date.today())}', header=True, index=False, encoding='1251')
-        with pd.ExcelWriter(f'{path}death_rule1_55_выбросы{str(date.today())}.xlsx', engine='openpyxl') as writer:
-            results_blowout.to_excel(writer, sheet_name=f'П55+_выбросы_{str(date.today())}', header=True, index=False,
-                                     encoding='1251')
-        with pd.ExcelWriter(f'{path}death_rule1_output{str(date.today())}.xlsx', engine='openpyxl') as writer:
-            output.to_excel(writer, sheet_name=f'П55+_output_{str(date.today())}', header=True, index=False,
-                            encoding='1251')
+        # with pd.ExcelWriter(f'{results_files_path}death_elderly_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+        #     RESULTS.to_excel(writer, sheet_name=f'elderly', header=True, index=False, encoding='1251')
+
+        with pd.ExcelWriter(f'{results_files_path}death_elderly_выбросы_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+            results_blowout.to_excel(writer, sheet_name=f'elderly_выбросы', header=True, index=False, encoding='1251')
+
+        with pd.ExcelWriter(f'{results_files_path}death_elderly_output_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+            output.to_excel(writer, sheet_name=f'elderly', header=True, index=False, encoding='1251')
+
+        with pd.ExcelWriter(f'{results_files_path}attached_file_death_elderly_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+            attached_file.to_excel(writer, sheet_name=f'attached_file_elderly', header=True, index=False, encoding='1251')
 ########################################################################################################################
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
     print(f'Number of generated tasks {len(output)}')
