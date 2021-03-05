@@ -7,6 +7,7 @@ from connect_PostGres import cnx
 from ISU_death_functions import make_date, make_date_born_death, make_day_week_month_year_death, calculate_death_age
 from ISU_death_functions import calculate_age_group, calculate_employee_group, make_mkb, make_address
 from ISU_death_functions import find_original_reason_mkb_group_name
+from ISU_death_lists_dict import results_files_path, results_files_suff
 
 
 def death_preprocessing(save_to_sql=True, save_to_excel=False):
@@ -55,7 +56,8 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
                         'MKB_NAME_a', 'MKB_GROUP_NAME_a', 'MKB_NAME_b', 'MKB_GROUP_NAME_b', 'MKB_NAME_v',
                         'MKB_GROUP_NAME_v', 'MKB_NAME_g', 'MKB_GROUP_NAME_g', 'MKB_NAME_d', 'MKB_GROUP_NAME_d',
                         'region_location', 'district_location', 'locality_location', 'street_location',
-                        'locality_death', 'street_death']
+                        'locality_death', 'street_death'
+                        ]
     df_death = df_death[df_death['region_location'].isin(['Липецкая'])]
     df_death.index = range(df_death.shape[0])
     index_lipetsk = df_death[df_death['locality_location'] == 'Липецк'].index
@@ -83,9 +85,8 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
         df_death.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
     if save_to_excel:
         print('Сохраняем данные в файл')
-        path = r'C:\Users\oganesyanKZ\PycharmProjects\ISU_death\Рассчеты/'
-        with pd.ExcelWriter(f'{path}death_finished_{str(date.today())}.xlsx', engine='openpyxl') as writer:
-            df_death.to_excel(writer, sheet_name=f'death_{str(date.today())}', header=True, index=False,
+        with pd.ExcelWriter(f'{results_files_path}death_finished_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+            df_death.to_excel(writer, sheet_name=f'death_{results_files_suff}', header=True, index=False,
                               encoding='1251')
 ########################################################################################################################
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
