@@ -85,7 +85,7 @@ escalation_recipient_text = {1: 'Разобраться.',
                              2: 'Принять меры.',
                              3: 'Заслушать доклад.'}
 ########################################################################################################################
-df_Population = pd.read_sql_query('''SELECT * FROM public."Population"''', cnx)
+df_Population = pd.read_sql_query('''SELECT * FROM public."population_view"''', cnx)
 df_Population = df_Population[(df_Population['Region'].isin(REGION)) &
                               (df_Population['Territory'].isin(['Все население'])) &
                               (df_Population['Gender'].isin(['Оба пола']))]
@@ -123,3 +123,4 @@ if __name__ == '__main__':
     print(df_Population.loc[len(df_Population) - 1])
     print(MKB_GROUP_LIST[-1])
     print(REGION)
+    print(df_Population[:10])
