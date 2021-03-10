@@ -5,6 +5,7 @@ from connect_PostGres import cnx
 from functools import partial
 from operator import is_not
 from datetime import date
+from sqlalchemy import types
 
 
 def not_nan_filter(df, col):
@@ -93,6 +94,28 @@ df_Population.columns = ['id', 'Feature', 'Region', 'Territory', 'GENDER', 'AGE_
 ########################################################################################################################
 results_files_path = r'../attached_file/'
 results_files_suff = f'1-{date.today().month}-{date.today().year}'
+########################################################################################################################
+column_name_type_death_finished = {'gender': types.VARCHAR,
+                                   'reason_a': types.VARCHAR, 'original_reason_a': types.INTEGER,
+                                   'reason_b': types.VARCHAR, 'original_reason_b': types.INTEGER,
+                                   'reason_v': types.VARCHAR, 'original_reason_v': types.INTEGER,
+                                   'reason_g': types.VARCHAR, 'original_reason_g': types.INTEGER,
+                                   'reason_d': types.VARCHAR,
+                                   'date_born': types.TIMESTAMP,
+                                   'date_death': types.TIMESTAMP,
+                                   'day_death': types.INTEGER, 'week_death': types.INTEGER,
+                                   'month_death': types.INTEGER, 'year_death': types.INTEGER,
+                                   'age_death': types.INTEGER,
+                                   'age_group_death': types.VARCHAR, 'employable_group': types.VARCHAR,
+                                   'MKB_NAME_a': types.Text, 'MKB_GROUP_NAME_a': types.Text,
+                                   'MKB_NAME_b': types.Text, 'MKB_GROUP_NAME_b': types.Text,
+                                   'MKB_NAME_v': types.Text, 'MKB_GROUP_NAME_v': types.Text,
+                                   'MKB_NAME_g': types.Text, 'MKB_GROUP_NAME_g': types.Text,
+                                   'MKB_NAME_d': types.Text, 'MKB_GROUP_NAME_d': types.Text,
+                                   'region_location': types.VARCHAR, 'district_location': types.VARCHAR,
+                                   'locality_location': types.VARCHAR, 'street_location': types.VARCHAR,
+                                   'locality_death': types.VARCHAR, 'street_death': types.VARCHAR,
+                                   'MKB_GROUP_NAME_original_reason': types.Text, 'DATE': types.Date}
 ########################################################################################################################
 
 
