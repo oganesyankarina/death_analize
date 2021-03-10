@@ -9,8 +9,6 @@ from ISU_death_functions import calculate_age_group, calculate_employee_group, m
 from ISU_death_functions import find_original_reason_mkb_group_name
 from ISU_death_lists_dict import results_files_path, results_files_suff, column_name_type_death_finished
 
-# from sqlalchemy import types
-
 
 def death_preprocessing(save_to_sql=True, save_to_excel=False):
     start_time = datetime.now()
@@ -18,12 +16,9 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
     logging.info(f'{program} started')
     print(f'{program} started')
 
-    df_death = pd.read_sql_query('''SELECT * FROM death''', cnx)
-
-    df_death = df_death.drop(columns=['id', 'locality', 'place_death', 'family', 'education', 'occupation', 'locality2',
-                                      'date_issue_certificate', 'reason_death', 'reason_established',
-                                      'period_reason_a', 'period_reason_b', 'period_reason_c', 'period_reason_d',
-                                      'period_reason_2d', 'road_accident'])
+    df_death = pd.read_sql_query('''SELECT sex, birth, death, address_full, at_death,  reason_a, \
+                  original_reasons_a, reason_b, original_reasons_b, reason_c, original_reasons_c, reason_d, \
+                  original_reasons_d, reason_2d FROM death''', cnx)
     df_death.columns = ['Пол', 'Дата рождения', 'Дата смерти', 'Место жительства', 'Место смерти',
                         'Причина а) КОД МКБ', 'Является первоначальной а)', 'Причина б)', 'Является первоначальной б)',
                         'Причина в)', 'Является первоначальной в)', 'Причина г)', 'Является первоначальной г)',
