@@ -7,7 +7,9 @@ from connect_PostGres import cnx
 from ISU_death_functions import make_date, make_date_born_death, make_day_week_month_year_death, calculate_death_age
 from ISU_death_functions import calculate_age_group, calculate_employee_group, make_mkb, make_address
 from ISU_death_functions import find_original_reason_mkb_group_name
-from ISU_death_lists_dict import results_files_path, results_files_suff
+from ISU_death_lists_dict import results_files_path, results_files_suff, column_name_type_death_finished
+
+# from sqlalchemy import types
 
 
 def death_preprocessing(save_to_sql=True, save_to_excel=False):
@@ -77,12 +79,13 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
 ########################################################################################################################
     # Корректируем даты, чтобы сохранить только полностью завершенный месяц
     dates_ = sorted(df_death['DATE'].unique())[:-1]
-    df_death = df_death[df_death.DATE.isin(dates_)]
+    df_death = df_death[(df_death.DATE.isin(dates_)) & (df_death.year_death >= 2017)]
 ########################################################################################################################
     if save_to_sql:
         # Сохраняем предобработанные данные в БД
         print('Сохраняем данные в базу данных')
-        df_death.to_sql('death_finished', cnx, if_exists='replace', index_label='id')
+        df_death.to_sql('death_finished', cnx, if_exists='replace', index_label='id',
+                        dtype=column_name_type_death_finished)
     if save_to_excel:
         print('Сохраняем данные в файл')
         with pd.ExcelWriter(f'{results_files_path}death_finished_{results_files_suff}.xlsx', engine='openpyxl') as writer:
