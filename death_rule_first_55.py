@@ -1,4 +1,4 @@
-# АНАЛИЗ СМЕРТНОСТИ ОТ ВСЕХ ПРИЧИН и ЗАВИСИМОСТЬ ОТ ДОЛИ НАСЕЛЕНИЯ В ВОЗРАСТЕ 55 ЛЕТ И СТАРШЕ
+""" АНАЛИЗ СМЕРТНОСТИ ОТ ВСЕХ ПРИЧИН и ЗАВИСИМОСТЬ ОТ ДОЛИ НАСЕЛЕНИЯ В ВОЗРАСТЕ 55 ЛЕТ И СТАРШЕ """
 import pandas as pd
 import uuid
 import logging
@@ -29,9 +29,9 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
     # Расчет показателей
     # Расчет среднего возраста умерших
     # по Липецкой области
-    print(f'Средний возраст умерших в 2017-2020гг. {round(df_death.age_death.mean(), 2)}')
+    print(f'Средний возраст умерших в 2017-{YEARS[-1]}гг. {df_death.age_death.mean(): .2f}')
     for last_year in YEARS:
-        print(f'Средний возраст умерших в {last_year} {round(df_death[df_death.year_death.isin([last_year])].age_death.mean(), 2)}')
+        print(f'Средний возраст умерших в {last_year} {df_death[df_death.year_death.isin([last_year])].age_death.mean(): .2f}')
     # в разрезе МО
     df_avg_age_death = pd.DataFrame(columns=['Region', 'Year', 'AvgAgeDeath'])
     k = 0
@@ -55,7 +55,7 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
                                                      'AllDeath': all_death,
                                                      'ProportionDeathInOldAge': round(amount_death_in_old_age / all_death, 2)}
             k += 1
-    print(f'Доля смертей в возрасте {age} лет и старше составляет {round(df_proportion_death_in_old_age.ProportionDeathInOldAge.mean(), 2) * 100}%')
+    print(f'Доля смертей в возрасте {age} лет и старше составляет {df_proportion_death_in_old_age.ProportionDeathInOldAge.mean() * 100: .2f}%')
 
     # Расчет доли населения старше 55 лет
     print(f'Расчет доли населения в возрасте старше {age} лет в разрезе муниципальных образований...')
@@ -148,28 +148,6 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
         df_Results.loc[i, 'Deviation from trend'] = df_Results.loc[i, 'AmountDeath/Population*time_factor_month'] - \
                                                     df_Results.loc[i, 'bestfit']
 ########################################################################################################################
-    # Рисуем и сохраняем график регрессии
-    print('Подготавливаем визуализацию...')
-    fig = go.Figure()
-    text = []
-    for i in df_Results.index:
-        region = df_Results.loc[i, 'Region']
-        month = int(df_Results.loc[i, 'Month'])
-        year = int(df_Results.loc[i, 'Year'])
-        text.append(f'{region} Месяц: {month} Год: {year}')
-    fig.add_trace(go.Scatter(name='X vs Y',
-                             x=df_Results['ProportionElderly'],
-                             y=df_Results['AmountDeath/Population*time_factor_month'].values,
-                             mode='markers', text=text, hovertemplate='%{text}<br>Доля: %{x}<br>Коэф. смертности: %{y}'
-                             ))
-    fig.add_trace(go.Scatter(name='line of best fit',
-                             x=df_Results['ProportionElderly'], y=df_Results['bestfit'], mode='lines'
-                             ))
-    fig.update_layout(xaxis_title=f'Доля населения в возрасте {age} лет и старше',
-                      yaxis_title='Количество умерших за месяц/Численность населения<br>*100 тыс. чел.*Временной коэффициент',
-                      title=f'Соотношение Доля населения в возрасте {age} лет и старше и <br>Количество умерших за месяц/Численность населения*100 тыс. чел.*Временной коэффициент')
-    fig.write_html(f'{results_files_path}График_death_elderly_{results_files_suff}.html')
-########################################################################################################################
     RESULTS = pd.concat([RESULTS, df_Results])
     blowout_ = df_Results[(df_Results['AmountDeath/Population*time_factor_month'] > df_Results['bestfit']) &
                           (df_Results['Deviation from trend'] > 1.5 * df_Results[
@@ -180,6 +158,44 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
     last_year = sorted(df_Results.Year.unique())[-1]
     last_date = sorted(df_Results.DATE.unique())[-1]
     results_blowout = blowout[blowout.Year.isin([last_year]) & blowout.DATE.isin([last_date])]
+########################################################################################################################
+    # Рисуем и сохраняем график регрессии
+    print('Подготавливаем визуализацию...')
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(name='Линия тренда',
+                             x=df_Results['ProportionElderly'],
+                             y=df_Results['bestfit'],
+                             mode='lines', marker_color='#6395A9'
+                             ))
+
+    text = []
+    for i in df_Results.index:
+        text.append(
+            f'{df_Results.loc[i, "Region"]} Месяц: {int(df_Results.loc[i, "Month"])} Год: {int(df_Results.loc[i, "Year"])}')
+    fig.add_trace(go.Scatter(name='Все значения с 2018 года',
+                             x=df_Results['ProportionElderly'],
+                             y=df_Results['AmountDeath/Population*time_factor_month'].values,
+                             mode='markers', marker_color='#69B987',
+                             text=text, hovertemplate='%{text}<br>Доля: %{x}<br>Коэф. смертности: %{y}'
+                             ))
+
+    text = []
+    for i in results_blowout.index:
+        text.append(
+            f'{results_blowout.loc[i, "Region"]} Месяц: {int(results_blowout.loc[i, "Month"])} Год: {int(results_blowout.loc[i, "Year"])}')
+    fig.add_trace(go.Scatter(name='Критические значения<br>за последний месяц',
+                             x=results_blowout['ProportionElderly'],
+                             y=results_blowout['AmountDeath/Population*time_factor_month'].values,
+                             mode='markers', marker_color='#CC5A76', marker_size=10,
+                             text=text,
+                             hovertemplate='%{text}<br>Доля: %{x}%<br>Коэф. смертности: %{y}'
+                             ))
+
+    fig.update_layout(xaxis_title=f'Доля населения в возрасте {age} лет и старше',
+                      yaxis_title='Количество умерших за месяц/Численность населения<br>*100 тыс. чел.*Временной коэффициент',
+                      title=f'Соотношение Доля населения в возрасте {age} лет и старше и <br>Количество умерших за месяц/Численность населения*100 тыс. чел.*Временной коэффициент')
+    fig.write_html(f'{results_files_path}График_death_elderly_{results_files_suff}.html')
 ########################################################################################################################
     # Формируем результат работы и записываем в БД
     print('Формируем перечень задач, назначаем ответственных и сроки...')
