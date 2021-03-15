@@ -12,7 +12,6 @@ from ISU_death_functions import make_recipient, make_corr_for_recipient, make_re
 from ISU_death_lists_dict import results_files_path, results_files_suff
 
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 
 def death_rule_first_55(save_to_sql=True, save_to_excel=True):
@@ -163,34 +162,28 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
     print('Подготавливаем визуализацию...')
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(name='Линия тренда',
+    fig.add_trace(go.Scatter(name='Линия тренда', mode='lines', marker_color='#6395A9',
                              x=df_Results['ProportionElderly'],
-                             y=df_Results['bestfit'],
-                             mode='lines', marker_color='#6395A9'
-                             ))
+                             y=df_Results['bestfit']))
 
     text = []
     for i in df_Results.index:
         text.append(
             f'{df_Results.loc[i, "Region"]} Месяц: {int(df_Results.loc[i, "Month"])} Год: {int(df_Results.loc[i, "Year"])}')
-    fig.add_trace(go.Scatter(name='Все значения с 2018 года',
+    fig.add_trace(go.Scatter(name='Все значения с 2018 года', mode='markers', marker_color='#69B987',
+                             text=text, hovertemplate='%{text}<br>Доля: %{x}<br>Коэф. смертности: %{y}',
                              x=df_Results['ProportionElderly'],
-                             y=df_Results['AmountDeath/Population*time_factor_month'].values,
-                             mode='markers', marker_color='#69B987',
-                             text=text, hovertemplate='%{text}<br>Доля: %{x}<br>Коэф. смертности: %{y}'
-                             ))
+                             y=df_Results['AmountDeath/Population*time_factor_month'].values))
 
     text = []
     for i in results_blowout.index:
         text.append(
             f'{results_blowout.loc[i, "Region"]} Месяц: {int(results_blowout.loc[i, "Month"])} Год: {int(results_blowout.loc[i, "Year"])}')
     fig.add_trace(go.Scatter(name='Критические значения<br>за последний месяц',
-                             x=results_blowout['ProportionElderly'],
-                             y=results_blowout['AmountDeath/Population*time_factor_month'].values,
                              mode='markers', marker_color='#CC5A76', marker_size=10,
-                             text=text,
-                             hovertemplate='%{text}<br>Доля: %{x}%<br>Коэф. смертности: %{y}'
-                             ))
+                             text=text, hovertemplate='%{text}<br>Доля: %{x}%<br>Коэф. смертности: %{y}',
+                             x=results_blowout['ProportionElderly'],
+                             y=results_blowout['AmountDeath/Population*time_factor_month'].values))
 
     fig.update_layout(xaxis_title=f'Доля населения в возрасте {age} лет и старше',
                       yaxis_title='Количество умерших за месяц/Численность населения<br>*100 тыс. чел.*Временной коэффициент',
