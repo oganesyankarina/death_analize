@@ -1,4 +1,4 @@
-# Эскалация задач
+""" Алгоритм по эскалации задач """
 from datetime import date, datetime
 import logging
 import pandas as pd

@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="23fa88ec-4f59-49e3-a9f7-3d928791c9a5" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/create_tables_db/table_task_type.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing.py" beforeDir="false" afterPath="$PROJECT_DIR$/preprocessing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ISU_death_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/ISU_death_functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/death_escalation.py" beforeDir="false" afterPath="$PROJECT_DIR$/death_escalation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/death_rule_first_55.py" beforeDir="false" afterPath="$PROJECT_DIR$/death_rule_first_55.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/death_rule_second.py" beforeDir="false" afterPath="$PROJECT_DIR$/death_rule_second.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,7 +46,7 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="reference.idesettings.debugger.python" />
   </component>
-  <component name="RunManager" selected="Python.preprocessing">
+  <component name="RunManager" selected="Python.death_rule_first_55">
     <configuration name="ISU_death_lists_dict" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ISU_death" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -170,9 +175,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.death_rule_first_55" />
         <item itemvalue="Python.preprocessing" />
         <item itemvalue="Python.table_task_type" />
-        <item itemvalue="Python.death_rule_first_55" />
         <item itemvalue="Python.ISU_death_lists_dict" />
         <item itemvalue="Python.mortality" />
       </list>

@@ -16,6 +16,11 @@ warnings.filterwarnings('ignore')
 # Функции для работы с базой данных
 
 def get_db_last_index(name_db):
+    """
+    Функция ищет максимальное значение индекса в таблице из базы данных
+    :param name_db: название таблицы из базы данных
+    :return: следующее значение для индекса в таблице из базы данных
+    """
     if len(pd.read_sql_query(f'''SELECT * FROM public.{name_db}''', cnx)) == 0:
         k = 0
     else:
@@ -24,7 +29,10 @@ def get_db_last_index(name_db):
 
 
 def get_df_death_finished():
-    # Данные после первоначальной предобработки из таблицы death_finished
+    """
+    Функция получает данные после первоначальной предобработки из таблицы death_finished
+    :return: df после предварительной обработки, основные списки
+    """
     df_death_finished = pd.read_sql_query('''SELECT * FROM public."death_finished"''', cnx)
     YEARS = sorted(df_death_finished['year_death'].unique())
     MONTHS = sorted(df_death_finished['month_death'].unique())
@@ -122,6 +130,12 @@ def make_address(df, col1, col2):
 
 
 def find_original_reason_mkb_group_name(df):
+    """
+    Функция для определения первоначальной причины смерти
+    :param df:
+    :return: добавляет в df столбец 'MKB_GROUP_NAME_original_reason' с указанием названия Группы МКБ, в которую входит
+    заболевание, послужившее первоначальной причиной смерти
+    """
     for i in df.index:
         temp = [df.loc[i, 'original_reason_a'], df.loc[i, 'original_reason_b'],
                 df.loc[i, 'original_reason_v'], df.loc[i, 'original_reason_g']]
@@ -156,7 +170,13 @@ def time_factor_calculation(year, month):
 ########################################################################################################################
 # Функции для main (проверка на последний день месяца)
 
+
 def amount_days_in_month(date_input):
+    """
+    Функция для проверки является ли date_input последним днем месяца
+    :param date_input: дата, которую необходимо проверить
+    :return: is_the_end принимает значение True - конец месяца, False - не конец месяца
+    """
     date_ = pd.to_datetime(date_input)
     year = date_.year
     month = date_.month
