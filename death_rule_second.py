@@ -89,9 +89,8 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
     #     with pd.ExcelWriter(f'{results_files_path}amount_death_MKB_{results_files_suff}.xlsx', engine='openpyxl') as writer:
     #         df_operating.to_excel(writer, sheet_name=f'amount_death_MKB', header=True, index=False, encoding='1251')
 ########################################################################################################################
-    print('Подготавливаем визуализацию...')
+    print('Подготавливаем визуализацию по Липецкой области...')
     main_column = 'AmountDeath/Population*time_factor_month'
-    k_color = 0
     fig = make_subplots(rows=len(MKB_GROUP_LIST_MAIN[:]), cols=1, specs=[[{}]] * len(MKB_GROUP_LIST_MAIN[:]),
                         subplot_titles=MKB_GROUP_LIST_MAIN, shared_yaxes=True,
                         vertical_spacing=0.02, horizontal_spacing=0.04)
@@ -99,20 +98,15 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
     for MKB_index in range(len(MKB_GROUP_LIST_MAIN[:])):
         for Region in REGION:
             if MKB_index == 0:
-                showlegend_Flag = True
+                show_legend_flag = True
             else:
-                showlegend_Flag = False
+                show_legend_flag = False
             temp = df_operating[df_operating.MKB.isin([MKB_GROUP_LIST_MAIN[MKB_index]]) &
                                 df_operating.Region.isin([Region])]
             fig.add_trace(go.Scatter(x=temp.DATE.values[:], y=temp[main_column].values[:],
-                                     showlegend=showlegend_Flag, legendgroup=Region,
+                                     showlegend=show_legend_flag, legendgroup=Region,
                                      mode='lines+markers', name=Region, text=Region), row=MKB_index + 1, col=1)
             fig.update_layout(showlegend=True)
-
-            if k_color == 7:
-                k_color = 0
-            else:
-                k_color += 1
 
     fig.update_layout(height=2300,
                       legend=dict(yanchor='bottom', xanchor='left', y=0.73, x=1.0, font=dict(size=10)),
@@ -120,11 +114,44 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
                                  font=dict(size=16), x=0.01, y=0.98, xanchor='left', yanchor='top'))
     fig.write_html(f'{results_files_path}График_death_MKB_{results_files_suff}.html')
 ########################################################################################################################
+    print('Подготавливаем визуализации для отдельных районов Липецкой области...')
+    for Region in REGION:
+        fig = make_subplots(rows=len(MKB_GROUP_LIST_MAIN[:]), cols=1, specs=[[{}]] * len(MKB_GROUP_LIST_MAIN[:]),
+                            subplot_titles=(MKB_GROUP_LIST_MAIN),
+                            shared_yaxes=True,
+                            vertical_spacing=0.02, horizontal_spacing=0.04)
+
+        corr = make_corr_for_recipient(Region)
+
+        for MKB_index in range(len(MKB_GROUP_LIST_MAIN[:])):
+
+            temp = df_operating[
+                df_operating.MKB.isin([MKB_GROUP_LIST_MAIN[MKB_index]]) & df_operating.Region.isin([Region])]
+
+            fig.add_trace(go.Scatter(x=temp.DATE.values[:-3], y=temp[main_column].values[:-3],
+                                     legendgroup=Region, mode='lines+markers', marker_color='#69B987',
+                                     name=Region, text=Region), row=MKB_index + 1, col=1)
+            fig.add_trace(go.Scatter(x=temp.DATE.values[-4:], y=temp[main_column].values[-4:],
+                                     legendgroup=Region, mode='lines+markers', marker_color='#CC5A76',
+                                     name=Region, text=Region), row=MKB_index + 1, col=1)
+            fig.add_trace(go.Scatter(x=[temp.DATE.values[-13]], y=[temp[main_column].values[-13]],
+                                     legendgroup=Region, mode='markers', marker_color='#CC5A76',
+                                     name=Region, text=Region), row=MKB_index + 1, col=1)
+            fig.update_layout(showlegend=False)
+
+        fig.update_layout(height=2300,
+                          legend=dict(yanchor='bottom', xanchor='left', y=0.73, x=1.0, font=dict(size=10), ),
+                          title=dict(text=f'<b>{Region}{corr}</b><br>Динамика смертности по группам МКБ<br>(с учетом численности населения и временного коэффициента)',
+                                     font=dict(size=16), x=0.01, y=0.98, xanchor='left', yanchor='top'))
+
+        fig.show()
+        fig.write_html(f'{results_files_path}График_death_MKB_{Region}_{results_files_suff}.html')
+########################################################################################################################
     # Поиск аномалий. Рост смертности три периода подряд.
     print('Ищем ситуации роста на протяжении трех месяцев...')
 
     df_Results = pd.DataFrame(columns=['Region', 'MKB', 'DATE', 'Year', 'Month', 'meaning_last3'])
-    main_column = 'AmountDeath/Population*time_factor_month'
+
     k = 0
     for MKB_id in MKB_GROUP_LIST_MAIN:
         for region in REGION:
@@ -136,18 +163,11 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
                     df_Results.loc[k] = {'Region': temp.loc[i, 'Region'], 'MKB': temp.loc[i, 'MKB'],
                                          'DATE': temp.loc[i, 'DATE'], 'Year': temp.loc[i, 'Year'],
                                          'Month': temp.loc[i, 'Month'],
-                                         'meaning_last3': '{}: {},{}: {},{}: {},{}: {}'.format(temp.loc[i - 3, 'DATE'],
-                                                                                               temp.loc[
-                                                                                                   i - 3, main_column],
-                                                                                               temp.loc[i - 2, 'DATE'],
-                                                                                               temp.loc[
-                                                                                                   i - 2, main_column],
-                                                                                               temp.loc[i - 1, 'DATE'],
-                                                                                               temp.loc[
-                                                                                                   i - 1, main_column],
-                                                                                               temp.loc[i, 'DATE'],
-                                                                                               temp.loc[
-                                                                                                   i, main_column])}
+                                         'meaning_last3': '{}: {},{}: {},{}: {},{}: {}'.format(
+                                             temp.loc[i - 3, 'DATE'], temp.loc[i - 3, main_column],
+                                             temp.loc[i - 2, 'DATE'], temp.loc[i - 2, main_column],
+                                             temp.loc[i - 1, 'DATE'], temp.loc[i - 1, main_column],
+                                             temp.loc[i, 'DATE'], temp.loc[i, main_column])}
                     k += 1
     # за последний месяц
     last_year = YEARS[-1]
@@ -309,4 +329,4 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
 if __name__ == '__main__':
     logging.basicConfig(filename='logfile.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s',
                         level=logging.INFO)
-    death_rule_second_new(save_to_sql=False, save_to_excel=True)
+    death_rule_second_new(save_to_sql=False, save_to_excel=False)
