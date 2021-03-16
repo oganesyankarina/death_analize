@@ -75,103 +75,52 @@ def death_escalation(save_to_sql=True, save_to_excel=True):
         for word in removal_list:
             RESULTS.loc[i, 'message'] = RESULTS.loc[i, 'message'].replace(word, '')
 ########################################################################################################################
-    doctors = []
-    leaders = []
-    for i in RESULTS.index:
-        if RESULTS.loc[i, 'recipient'].find('Главный врач') == 0:
-            doctors.append(i)
-        if RESULTS.loc[i, 'recipient'].find('Глава МО') == 0:
-            leaders.append(i)
-########################################################################################################################
-    # Для главврачей
-    RESULTS_doctors = RESULTS[RESULTS.index.isin(doctors)]
     output = pd.DataFrame(columns=['escalation_recipient', 'task_type', 'original_recipient', 'message', 'release',
                                    'deadline', 'title', 'fio_recipient', 'uuid'])
     k = get_db_last_index('death_escalation_output')
 
-    for i in RESULTS_doctors.index:
-        escalation_level = RESULTS_doctors.loc[i, 'escalation_level']
+    for i in RESULTS.index:
+        escalation_level = RESULTS.loc[i, 'escalation_level']
         escalation_recipient = escalation_recipient_list[escalation_level]
 
-        original_recipient = RESULTS_doctors.loc[i, 'recipient']
+        original_recipient = RESULTS.loc[i, 'recipient']
 
-        task = escalation_recipient_text[escalation_level]
-        task_type = RESULTS_doctors.loc[i, 'task_type']
-        release = RESULTS_doctors.loc[i, 'release']
+        task_type = RESULTS.loc[i, 'task_type']
+        release = RESULTS.loc[i, 'release']
 
-        message_insert = RESULTS_doctors.loc[i, 'message']
+        message_insert = RESULTS.loc[i, 'message']
 
-        # Задача для получателя на уровень эскалации
-        fio = make_escalation_recipient_fio(escalation_level)
-        message = f'ИСУ эскалация Эскалированная задача. {task} Первоначальный исполнитель: {original_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
-        output.loc[k] = {'escalation_recipient': escalation_recipient,
-                         'task_type': task_type,
-                         'original_recipient': original_recipient,
-                         'message': message,
-                         'release': release,
-                         'deadline': str(date.today() + pd.Timedelta(days=14)),
-                         'title': f'Эскалированная задача. {task}',
-                         'fio_recipient': fio,
-                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
-        # Предупреждения на промежуточные уровни
-        if escalation_level > 1:
-            for j in range(1, escalation_level):
-                fio = make_escalation_recipient_fio(escalation_level-j)
-                message = f'ИСУ предупреждение Задача эскалирована на уровень - {escalation_recipient}. Первоначальный исполнитель: {original_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
-                output.loc[k+escalation_level-j] = {'escalation_recipient': escalation_recipient_list[escalation_level-j],
-                                                    'task_type': task_type,
-                                                    'original_recipient': original_recipient,
-                                                    'message': message,
-                                                    'release': release,
-                                                    'deadline': str(date.today() + pd.Timedelta(days=14)),
-                                                    'title': f'Задача эскалирована на уровень - {escalation_recipient}.',
-                                                    'fio_recipient': fio,
-                                                    'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
         # Предупреждение для первоначального исполнителя
         fio = make_recipient_fio(original_recipient)
-        message = f'ИСУ предупреждение Ваша задача эскалирована на уровень - {escalation_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
-        output.loc[k+escalation_level] = {'escalation_recipient': original_recipient,
-                                          'task_type': task_type,
-                                          'original_recipient': original_recipient,
-                                          'message': message,
-                                          'release': release,
-                                          'deadline': str(date.today() + pd.Timedelta(days=14)),
-                                          'title': f'Ваша задача эскалирована на уровень - {escalation_recipient}.',
-                                          'fio_recipient': fio,
-                                          'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
-        k = k+1+escalation_level
-########################################################################################################################
-    if save_to_sql:
-        # Сохраняем предобработанные данные в БД
-        output.to_sql('death_escalation_output', cnx, if_exists='append', index_label='id')
-    if save_to_excel:
-        with pd.ExcelWriter(f'{results_files_path}death_escalation_output_{results_files_suff}.xlsx', engine='openpyxl') as writer:
-            output.to_excel(writer, sheet_name=f'escalation_doctors', header=True, index=False, encoding='1251')
-########################################################################################################################
-    print(f'Number of generated escalation tasks for doctors {len(output)}')
-    logging.info(f'Number of generated escalation tasks for doctors {len(output)}')
-########################################################################################################################
-    # Для глав МО
-    RESULTS_leaders = RESULTS[RESULTS.index.isin(leaders)]
-    output = pd.DataFrame(columns=['escalation_recipient', 'task_type', 'original_recipient', 'message', 'release',
-                                   'deadline', 'title', 'fio_recipient', 'uuid'])
-    k = get_db_last_index('death_escalation_output')
+        message = f'ИСУ предупреждение Ваша задача эскалирована на уровень - {escalation_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level + 1} месяца подряд.'
+        output.loc[k + 1] = {'escalation_recipient': original_recipient,
+                             'task_type': task_type,
+                             'original_recipient': original_recipient,
+                             'message': message,
+                             'release': release,
+                             'deadline': str(date.today() + pd.Timedelta(days=14)),
+                             'title': f'Ваша задача эскалирована на уровень - {escalation_recipient}.',
+                             'fio_recipient': fio,
+                             'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
+        k += 1
 
-    for i in RESULTS_leaders.index:
-        escalation_level = RESULTS_leaders.loc[i, 'escalation_level']
-        escalation_recipient = escalation_recipient_list[escalation_level]
+    # Задача для получателя на уровень эскалации
+    for escalation_level in RESULTS.escalation_level.unique():
+        temp = RESULTS[RESULTS.escalation_level.isin([escalation_level])]
+        for task_type in temp.task_type.unique():
+            temp1 = temp[temp.task_type.isin([task_type])]
+            escalation_recipient = escalation_recipient_list[escalation_level]
 
-        original_recipient = RESULTS_leaders.loc[i, 'recipient']
+            original_recipient = ', '.join(temp1.recipient.values)
 
-        task = escalation_recipient_text[escalation_level]
-        task_type = RESULTS_leaders.loc[i, 'task_type']
-        release = RESULTS_leaders.loc[i, 'release']
-        message_insert = RESULTS_leaders.loc[i, 'message']
+            task = escalation_recipient_text[escalation_level]
+            release = temp1.release.unique()[0]
 
-        # Задача для получателя на уровень эскалации
-        if escalation_level == 3:
+            message_insert = temp1.message.unique()[0]
+
+            # Задача для получателя на уровень эскалации
             fio = make_escalation_recipient_fio(escalation_level)
-            message = f'ИСУ эскалация Эскалированная задача. {task} Первоначальный исполнитель: {original_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
+            message = f'ИСУ эскалация Эскалированная задача. {task} Первоначальные исполнители: {original_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level + 1} месяца подряд.'
             output.loc[k] = {'escalation_recipient': escalation_recipient,
                              'task_type': task_type,
                              'original_recipient': original_recipient,
@@ -181,30 +130,34 @@ def death_escalation(save_to_sql=True, save_to_excel=True):
                              'title': f'Эскалированная задача. {task}',
                              'fio_recipient': fio,
                              'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
-            # Предупреждение для первоначального исполнителя
-            fio = make_recipient_fio(original_recipient)
-            message = f'ИСУ предупреждение Ваша задача эскалирована на уровень - {escalation_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level+1} месяца подряд.'
-            output.loc[k+escalation_level] = {'escalation_recipient': original_recipient,
-                                              'task_type': task_type,
-                                              'original_recipient': original_recipient,
-                                              'message': message,
-                                              'release': release,
-                                              'deadline': str(date.today() + pd.Timedelta(days=14)),
-                                              'title': f'Ваша задача эскалирована на уровень - {escalation_recipient}.',
-                                              'fio_recipient': fio,
-                                              'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
-            k = k+2
+
+            # Предупреждения на промежуточные уровни
+            if escalation_level > 1:
+                for j in range(1, escalation_level):
+                    fio = make_escalation_recipient_fio(escalation_level - j)
+                    message = f'ИСУ предупреждение Задача эскалирована на уровень - {escalation_recipient}. Первоначальныe исполнители: {original_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level + 1} месяца подряд.'
+                    output.loc[k + escalation_level - j] = {
+                        'escalation_recipient': escalation_recipient_list[escalation_level - j],
+                        'task_type': task_type,
+                        'original_recipient': original_recipient,
+                        'message': message,
+                        'release': release,
+                        'deadline': str(date.today() + pd.Timedelta(days=14)),
+                        'title': f'Задача эскалирована на уровень - {escalation_recipient}.',
+                        'fio_recipient': fio,
+                        'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
+            k += escalation_level
 ########################################################################################################################
     if save_to_sql:
         # Сохраняем предобработанные данные в БД
         output.to_sql('death_escalation_output', cnx, if_exists='append', index_label='id')
     if save_to_excel:
-        with pd.ExcelWriter(f'{results_files_path}death_escalation_output_{results_files_suff}.xlsx', engine='openpyxl', mode='a') as writer:
-            output.to_excel(writer, sheet_name=f'escalation_leaders', header=True, index=False, encoding='1251')
+        with pd.ExcelWriter(f'{results_files_path}death_escalation_output_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+            output.to_excel(writer, sheet_name=f'escalation_doctors', header=True, index=False, encoding='1251')
 ########################################################################################################################
-    print(f'Number of generated escalation tasks for leaders {len(output)}')
-    logging.info(f'Number of generated escalation tasks for leaders {len(output)}')
-
+    print(f'Number of generated escalation tasks {len(output)}')
+    logging.info(f'Number of generated escalation tasks {len(output)}')
+########################################################################################################################
     print('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
     logging.info('{} done. elapsed time {}'.format(program, (datetime.now() - start_time)))
 ########################################################################################################################
