@@ -2,3 +2,7 @@
 Графики/
 
 logfile.log
+
+.idea/
+
+__pycache__/
