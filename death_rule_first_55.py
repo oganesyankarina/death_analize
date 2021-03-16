@@ -9,7 +9,7 @@ from connect_PostGres import cnx
 from ISU_death_lists_dict import df_Population, REGION, MONTHS_dict, FIO_dict, MKB_GROUP_LIST_MAIN, escalation_recipient_list
 from ISU_death_functions import time_factor_calculation, get_df_death_finished, get_db_last_index
 from ISU_death_functions import make_recipient, make_corr_for_recipient, make_release_date, make_recipient_fio
-from ISU_death_lists_dict import results_files_path, results_files_suff
+from ISU_death_lists_dict import results_files_path, results_files_suff, attached_file_names_dict
 
 import plotly.graph_objects as go
 
@@ -188,7 +188,7 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
     fig.update_layout(xaxis_title=f'Доля населения в возрасте {age} лет и старше',
                       yaxis_title='Количество умерших за месяц/Численность населения<br>*100 тыс. чел.*Временной коэффициент',
                       title=f'Соотношение Доля населения в возрасте {age} лет и старше и <br>Количество умерших за месяц/Численность населения*100 тыс. чел.*Временной коэффициент')
-    fig.write_html(f'{results_files_path}График_death_elderly_{results_files_suff}.html')
+    fig.write_html(f'{results_files_path}{attached_file_names_dict[1][1]}{results_files_suff}.html')
 ########################################################################################################################
     # Формируем результат работы и записываем в БД
     print('Формируем перечень задач, назначаем ответственных и сроки...')
@@ -218,8 +218,8 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
     for i in output.index:
         uuid_ = output.loc[i, 'uuid']
 
-        attached_file.loc[k] = {'task_uuid': uuid_, 'file': f'death_elderly_выбросы_{results_files_suff}.xlsx'}
-        attached_file.loc[k+1] = {'task_uuid': uuid_, 'file': f'График_death_elderly_{results_files_suff}.html'}
+        attached_file.loc[k] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][0]}{results_files_suff}.xlsx'}
+        attached_file.loc[k+1] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][1]}{results_files_suff}.html'}
 
         k += 2
 ########################################################################################################################
@@ -232,13 +232,13 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
         # with pd.ExcelWriter(f'{results_files_path}death_elderly_{results_files_suff}.xlsx', engine='openpyxl') as writer:
         #     RESULTS.to_excel(writer, sheet_name=f'elderly', header=True, index=False, encoding='1251')
 
-        with pd.ExcelWriter(f'{results_files_path}death_elderly_выбросы_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+        with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[1][0]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
             results_blowout.to_excel(writer, sheet_name=f'elderly_выбросы', header=True, index=False, encoding='1251')
 
-        with pd.ExcelWriter(f'{results_files_path}death_elderly_output_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+        with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[1][2]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
             output.to_excel(writer, sheet_name=f'elderly', header=True, index=False, encoding='1251')
 
-        with pd.ExcelWriter(f'{results_files_path}attached_file_death_elderly_{results_files_suff}.xlsx', engine='openpyxl') as writer:
+        with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[1][3]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
             attached_file.to_excel(writer, sheet_name=f'attached_file_elderly', header=True, index=False, encoding='1251')
 ########################################################################################################################
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
