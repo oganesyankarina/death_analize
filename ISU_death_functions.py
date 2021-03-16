@@ -229,9 +229,9 @@ def make_recipient_fio(recipient_):
 
 def make_escalation_recipient_fio(escalation_level_):
         if escalation_recipient_list[escalation_level_] in FIO_dict.keys():
-            fio = FIO_dict[escalation_recipient_list[escalation_level_]]
+            return FIO_dict[escalation_recipient_list[escalation_level_]]
         else:
-            fio = ''
+            return ''
 
 
 def make_release_date(date_):
