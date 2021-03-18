@@ -6,3 +6,5 @@ logfile.log
 .idea/
 
 __pycache__/
+
+*.ipynb
