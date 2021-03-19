@@ -83,12 +83,12 @@ escalation_recipient_text = {1: 'Разобраться.',
                              2: 'Принять меры.',
                              3: 'Заслушать доклад.'}
 ########################################################################################################################
-# df_Population = pd.read_sql_query('''SELECT * FROM public."population_view"''', cnx)
-# df_Population = df_Population[(df_Population['region'].isin(REGION)) &
-#                               (df_Population['territory'].isin(['Все население'])) &
-#                               (df_Population['gender'].isin(['Оба пола']))]
-# df_Population.index = range(df_Population.shape[0])
-# df_Population.columns = ['id', 'feature', 'region', 'territory', 'gender', 'age_group', 'year', 'population']
+df_population = pd.read_sql_query('''SELECT * FROM public."population_view"''', cnx)
+df_population = df_population[(df_population['region'].isin(REGION)) &
+                              (df_population['territory'].isin(['Все население'])) &
+                              (df_population['gender'].isin(['Оба пола']))]
+df_population.index = range(df_population.shape[0])
+df_population.columns = ['region', 'territory', 'gender', 'age_group', 'year', 'population']
 ########################################################################################################################
 results_files_path = r'../attached_file/'
 results_files_suff = f'1-{date.today().month}-{date.today().year}'
