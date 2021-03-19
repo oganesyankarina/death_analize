@@ -5,15 +5,14 @@ import calendar
 from datetime import date
 from dateutil import relativedelta as rdelta
 
-
 from connect_PostGres import cnx
 from ISU_death_lists_dict import AgeGroupList, EmployeeAgeList, Main_MKB_dict, MKB_CODE_LIST, df_MKB
 from ISU_death_lists_dict import MONTHS_dict, FIO_dict, MKB_GROUP_LIST_MAIN, escalation_recipient_list
 
-
 warnings.filterwarnings('ignore')
 ########################################################################################################################
 # Функции для работы с базой данных
+
 
 def get_db_last_index(name_db):
     """
@@ -21,11 +20,10 @@ def get_db_last_index(name_db):
     :param name_db: название таблицы из базы данных
     :return: следующее значение для индекса в таблице из базы данных
     """
-    if len(pd.read_sql_query(f'''SELECT * FROM public.{name_db}''', cnx)) == 0:
-        k = 0
+    if len(pd.read_sql_query(f'''SELECT id FROM public.{name_db}''', cnx)) == 0:
+        return 1
     else:
-        k = pd.read_sql_query(f'''SELECT * FROM public.{name_db}''', cnx).id.max()+1
-    return k
+        return pd.read_sql_query(f'''SELECT id FROM public.{name_db}''', cnx).id.max()+1
 
 
 def get_df_death_finished():
@@ -33,31 +31,16 @@ def get_df_death_finished():
     Функция получает данные после первоначальной предобработки из таблицы death_finished
     :return: df после предварительной обработки, основные списки
     """
-    df_death_finished = pd.read_sql_query('''SELECT * FROM public."death_finished"''', cnx)
-    YEARS = sorted(df_death_finished['year_death'].unique())
-    MONTHS = sorted(df_death_finished['month_death'].unique())
-    DATES = sorted(df_death_finished['DATE'].unique())
-    GENDERS = sorted(df_death_finished['gender'].unique())
-    AGE_GROUPS = sorted(df_death_finished['age_group_death'].unique())
+    df = pd.read_sql_query('''SELECT * FROM public."death_finished"''', cnx)
+    YEARS = sorted(df['year_death'].unique())
+    MONTHS = sorted(df['month_death'].unique())
+    DATES = sorted(df['date_period'].unique())
+    GENDERS = sorted(df['gender'].unique())
+    AGE_GROUPS = sorted(df['age_group_death'].unique())
 
-    return df_death_finished, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS
+    return df, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS
 ########################################################################################################################
 # Функции для предобработки данных
-
-
-def make_date(df, date_col):
-    for col in date_col:
-        df[col] = df[col].apply(pd.to_datetime)
-    return df
-
-
-def make_date_born_death(df, date_col):
-    df['ДАТА_РОЖДЕНИЯ'] = 0
-    df['ДАТА_СМЕРТИ'] = 0
-    for i in df.index:
-        df.loc[i, 'ДАТА_РОЖДЕНИЯ'] = df.loc[i, date_col[0]].date()
-        df.loc[i, 'ДАТА_СМЕРТИ'] = df.loc[i, date_col[1]].date()
-    return df
 
 
 def make_day_week_month_year_death(df):
@@ -66,19 +49,19 @@ def make_day_week_month_year_death(df):
     df['МЕСЯЦ_СМЕРТИ'] = 0
     df['ГОД_СМЕРТИ'] = 0
     for i in df.index:
-        df.loc[i, 'ДЕНЬ_СМЕРТИ'] = int(df.loc[i, 'ДАТА_СМЕРТИ'].day)
-        df.loc[i, 'НЕДЕЛЯ_СМЕРТИ'] = int(df.loc[i, 'ДАТА_СМЕРТИ'].week)
-        df.loc[i, 'МЕСЯЦ_СМЕРТИ'] = int(df.loc[i, 'ДАТА_СМЕРТИ'].month)
-        df.loc[i, 'ГОД_СМЕРТИ'] = int(df.loc[i, 'ДАТА_СМЕРТИ'].year)
+        df.loc[i, 'ДЕНЬ_СМЕРТИ'] = int(df.loc[i, 'Дата смерти'].day)
+        df.loc[i, 'НЕДЕЛЯ_СМЕРТИ'] = int(df.loc[i, 'Дата смерти'].week)
+        df.loc[i, 'МЕСЯЦ_СМЕРТИ'] = int(df.loc[i, 'Дата смерти'].month)
+        df.loc[i, 'ГОД_СМЕРТИ'] = int(df.loc[i, 'Дата смерти'].year)
     return df
 
 
 def calculate_death_age(df):
     df['ВОЗРАСТ_СМЕРТИ'] = ''
     for i in df.index:
-        if df['ДАТА_РОЖДЕНИЯ'].notna()[i]:
-            df.loc[i, 'ВОЗРАСТ_СМЕРТИ'] = int('{0.years}'.format(rdelta.relativedelta(df.loc[i, 'ДАТА_СМЕРТИ'],
-                                                                                      df.loc[i, 'ДАТА_РОЖДЕНИЯ'])))
+        if df['Дата рождения'].notna()[i]:
+            df.loc[i, 'ВОЗРАСТ_СМЕРТИ'] = int('{0.years}'.format(rdelta.relativedelta(df.loc[i, 'Дата смерти'],
+                                                                                      df.loc[i, 'Дата рождения'])))
     return df
 
 
@@ -103,12 +86,10 @@ def calculate_employee_group(df):
 def make_mkb(df, col_df, col_df_new1, col_df_new2):
     df[col_df_new1] = ''
     df[col_df_new2] = ''
-
     for i in df[df[col_df].isin(MKB_CODE_LIST)].index:
-        df.loc[i, col_df_new1] = df_MKB.loc[df_MKB[df_MKB['MKB_CODE'] == df.loc[i, col_df]].index, 'MKB_NAME'].values
-        df.loc[i, col_df_new2] = df_MKB.loc[df_MKB[df_MKB['MKB_CODE'] == df.loc[i, col_df]].index,
-                                            'MKB_GROUP_NAME'].values
-
+        df.loc[i, col_df_new1] = df_MKB.loc[df_MKB[df_MKB['mkb_code'] == df.loc[i, col_df]].index, 'mkb_name'].values
+        df.loc[i, col_df_new2] = df_MKB.loc[df_MKB[df_MKB['mkb_code'] == df.loc[i, col_df]].index,
+                                            'mkb_group_name'].values
     return df
 
 
@@ -143,12 +124,13 @@ def find_original_reason_mkb_group_name(df):
             main_mkb_index = temp.index('1')
             main_mkb_group = Main_MKB_dict[main_mkb_index]
             main_mkb_group_original_reason = df.loc[i, main_mkb_group]
-            df.loc[i, 'MKB_GROUP_NAME_original_reason'] = main_mkb_group_original_reason
+            df.loc[i, 'mkb_group_name_original_reason'] = main_mkb_group_original_reason
         else:
-            df.loc[i, 'MKB_GROUP_NAME_original_reason'] = 'основная причина смерти не установлена'
+            df.loc[i, 'mkb_group_name_original_reason'] = 'основная причина смерти не установлена'
     return df
 ########################################################################################################################
 # Функции для правил
+
 
 def time_factor_calculation(year, month):
     year = int(year)
@@ -164,9 +146,7 @@ def time_factor_calculation(year, month):
     accumulation_period_end_length = (date(year + 1, 1, 1) - start).days
     time_factor_month = round(accumulation_period_end_length / amount_days, 4)
     time_factor_period = round(accumulation_period_end_length / accumulation_period_length, 4)
-
     return time_factor_month, time_factor_period
-
 ########################################################################################################################
 # Функции для main (проверка на последний день месяца)
 
@@ -222,16 +202,30 @@ def make_recipient(mo):
 
 def make_recipient_fio(recipient_):
     if recipient_ in FIO_dict.keys():
-        return FIO_dict[recipient_]
+        return FIO_dict[recipient_][0]
+    else:
+        return ''
+
+
+def make_recipient_uuid(recipient_):
+    if recipient_ in FIO_dict.keys():
+        return FIO_dict[recipient_][1]
     else:
         return ''
 
 
 def make_escalation_recipient_fio(escalation_level_):
         if escalation_recipient_list[escalation_level_] in FIO_dict.keys():
-            return FIO_dict[escalation_recipient_list[escalation_level_]]
+            return FIO_dict[escalation_recipient_list[escalation_level_]][0]
         else:
             return ''
+
+
+def make_escalation_recipient_uuid(escalation_level_):
+    if escalation_recipient_list[escalation_level_] in FIO_dict.keys():
+        return FIO_dict[escalation_recipient_list[escalation_level_]][1]
+    else:
+        return ''
 
 
 def make_release_date(date_):
