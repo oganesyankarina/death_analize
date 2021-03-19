@@ -193,41 +193,43 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
 ########################################################################################################################
     # Формируем результат работы и записываем в БД
     print('Формируем перечень задач, назначаем ответственных и сроки...')
-    output = pd.DataFrame(columns=['recipient', 'message', 'deadline', 'release',
-                                   'task_type', 'title', 'fio_recipient', 'uuid'])
-    k = get_db_last_index('test_output')
+    output = pd.DataFrame(columns=['recipient_uuid', 'message', 'deadline', 'release',
+                                   'task_type_uuid', 'title', 'uuid'])
+    k = get_db_last_index('death_output')
     for i in results_blowout.index:
         recipient = make_recipient(results_blowout.loc[i, 'Region'])
         fio = make_recipient_fio(recipient)
-        release = make_release_date(results_blowout.loc[i, 'DATE'])
+        recipient_uuid = make_recipient_uuid(recipient)
+        release = make_release_date(results_blowout.loc[i, 'date_period'])
 
-        task_type = 'Смертность_П1_55+'
-        title = 'Уровень смертности не соответствует возрастной структуре населения района'
+        task_type_uuid = task_type_dict['Смертность_П1_55+'][0]
+        title = task_type_dict['Смертность_П1_55+'][1]
         month = MONTHS_dict[results_blowout.loc[i, 'Month']]
         last_year = int(results_blowout.loc[i, 'Year'])
         message = f'Проанализировать причины высокого уровня смертности в районе в период {month} {last_year} года'
 
-        output.loc[k] = {'task_type': task_type, 'recipient': recipient, 'message': f'ИСУ обычная {message}',
-                         'release': release, 'deadline': str(date.today() + pd.Timedelta(days=14)),
-                         'title': title, 'fio_recipient': fio,
+        output.loc[k] = {'recipient_uuid': recipient_uuid, 'message': f'ИСУ обычная {message}',
+                         'deadline': str(date.today() + pd.Timedelta(days=14)), 'release': release,
+                         'task_type_uuid': task_type_uuid,
+                         'title': title,
                          'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}')
                          }
         k += 1
 ########################################################################################################################
-    attached_file = pd.DataFrame(columns=['task_uuid', 'file'])
-    k = get_db_last_index('attached_file_death')
-    for i in output.index:
-        uuid_ = output.loc[i, 'uuid']
-
-        attached_file.loc[k] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][0]}{results_files_suff}.xlsx'}
-        attached_file.loc[k+1] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][1]}{results_files_suff}.html'}
-
-        k += 2
+    # attached_file = pd.DataFrame(columns=['task_uuid', 'file'])
+    # k = get_db_last_index('attached_file_death')
+    # for i in output.index:
+    #     uuid_ = output.loc[i, 'uuid']
+    #
+    #     attached_file.loc[k] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][0]}{results_files_suff}.xlsx'}
+    #     attached_file.loc[k+1] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][1]}{results_files_suff}.html'}
+    #
+    #     k += 2
 ########################################################################################################################
     print('Сохраняем результаты...')
     if save_to_sql:
-        output.to_sql('test_output', cnx, if_exists='append', index_label='id')
-        attached_file.to_sql('attached_file_death', cnx, if_exists='append', index_label='id')
+        output.to_sql('death_output', cnx, if_exists='append', index_label='id')
+        # attached_file.to_sql('attached_file_death', cnx, if_exists='append', index_label='id')
 
     if save_to_excel:
         # with pd.ExcelWriter(f'{results_files_path}death_elderly_{results_files_suff}.xlsx', engine='openpyxl') as writer:
@@ -239,8 +241,8 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
         with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[1][2]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
             output.to_excel(writer, sheet_name=f'elderly', header=True, index=False, encoding='1251')
 
-        with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[1][3]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
-            attached_file.to_excel(writer, sheet_name=f'attached_file_elderly', header=True, index=False, encoding='1251')
+        # with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[1][3]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
+        #     attached_file.to_excel(writer, sheet_name=f'attached_file_elderly', header=True, index=False, encoding='1251')
 ########################################################################################################################
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
     print(f'Number of generated tasks {len(output)}')
@@ -252,4 +254,4 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
 if __name__ == '__main__':
     logging.basicConfig(filename='logfile.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s',
                         level=logging.INFO)
-    death_rule_first_55(save_to_sql=False, save_to_excel=True)
+    death_rule_first_55(save_to_sql=True, save_to_excel=False)
