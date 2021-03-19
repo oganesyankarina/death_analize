@@ -83,6 +83,9 @@ escalation_recipient_text = {1: 'Разобраться.',
                              2: 'Принять меры.',
                              3: 'Заслушать доклад.'}
 ########################################################################################################################
+df_task_type = pd.read_sql_query('''SELECT "name", "uuid", "title" FROM public."death_task_type"''', cnx)
+task_type_dict = dict(zip(df_task_type.name, [list(tup) for tup in zip(df_task_type.uuid, df_task_type.title)]))
+########################################################################################################################
 df_population = pd.read_sql_query('''SELECT * FROM public."population_view"''', cnx)
 df_population = df_population[(df_population['region'].isin(REGION)) &
                               (df_population['territory'].isin(['Все население'])) &
@@ -132,5 +135,6 @@ if __name__ == '__main__':
     # print(df_FIO.uuid)
     # print(FIO_dict)
     # print(FIO_dict['Глава администрации'][1])
+    print(task_type_dict)
     pass
 
