@@ -4,7 +4,7 @@ import logging
 import pandas as pd
 
 from connect_PostGres import cnx
-from ISU_death_functions import make_date, make_date_born_death, make_day_week_month_year_death, calculate_death_age
+from ISU_death_functions import make_day_week_month_year_death, calculate_death_age
 from ISU_death_functions import calculate_age_group, calculate_employee_group, make_mkb, make_address
 from ISU_death_functions import find_original_reason_mkb_group_name
 from ISU_death_lists_dict import results_files_path, results_files_suff, column_name_type_death_finished
@@ -24,10 +24,6 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
                         'Причина в)', 'Является первоначальной в)', 'Причина г)', 'Является первоначальной г)',
                         'Причина II (д)']
     print('Обрабатываем даты рождения и смерти...')
-    date_col = ['Дата рождения', 'Дата смерти']
-    df_death = make_date(df_death, date_col)
-    df_death = make_date_born_death(df_death, date_col)
-    df_death = make_date(df_death, ['ДАТА_РОЖДЕНИЯ', 'ДАТА_СМЕРТИ'])
     df_death = make_day_week_month_year_death(df_death)
 
     print('Обрабатываем возраст умершего...')
@@ -45,13 +41,14 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
     print('Обрабатываем адреса...')
     df_death = make_address(df_death, 'Место жительства', 'Место смерти')
 
-    df_death = df_death.drop(columns=['Дата рождения', 'Дата смерти', 'Место жительства', 'Место смерти'])
-    df_death.columns = ['gender', 'reason_a', 'original_reason_a', 'reason_b', 'original_reason_b', 'reason_v',
+    df_death = df_death.drop(columns=['Место жительства', 'Место смерти'])
+    df_death.columns = ['gender', 'date_born', 'date_death',
+                        'reason_a', 'original_reason_a', 'reason_b', 'original_reason_b', 'reason_v',
                         'original_reason_v', 'reason_g', 'original_reason_g', 'reason_d',
-                        'date_born', 'date_death', 'day_death', 'week_death', 'month_death', 'year_death',
+                        'day_death', 'week_death', 'month_death', 'year_death',
                         'age_death', 'age_group_death', 'employable_group',
-                        'MKB_NAME_a', 'MKB_GROUP_NAME_a', 'MKB_NAME_b', 'MKB_GROUP_NAME_b', 'MKB_NAME_v',
-                        'MKB_GROUP_NAME_v', 'MKB_NAME_g', 'MKB_GROUP_NAME_g', 'MKB_NAME_d', 'MKB_GROUP_NAME_d',
+                        'mkb_name_a', 'mkb_group_name_a', 'mkb_name_b', 'mkb_group_name_b', 'mkb_name_v',
+                        'mkb_group_name_v', 'mkb_name_g', 'mkb_group_name_g', 'mkb_name_d', 'mkb_group_name_d',
                         'region_location', 'district_location', 'locality_location', 'street_location',
                         'locality_death', 'street_death'
                         ]
@@ -70,11 +67,12 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
     for i in df_death.index:
         year = df_death.loc[i, 'year_death']
         month = df_death.loc[i, 'month_death']
-        df_death.loc[i, 'DATE'] = date(year, month, 1)
+        df_death.loc[i, 'date_period'] = date(year, month, 1)
 ########################################################################################################################
     # Корректируем даты, чтобы сохранить только полностью завершенный месяц
-    dates_ = sorted(df_death['DATE'].unique())[:-1]
-    df_death = df_death[(df_death.DATE.isin(dates_)) & (df_death.year_death >= 2017)]
+    dates_ = sorted(df_death['date_period'].unique())[:-1]
+    df_death = df_death[(df_death.date_period.isin(dates_)) & (df_death.year_death >= 2017)]
+    df_death.index = [x for x in range(1, len(df_death)+1)]
 ########################################################################################################################
     if save_to_sql:
         # Сохраняем предобработанные данные в БД
