@@ -52,16 +52,15 @@ EmployeeAgeList = {'100 и более': 'Старше трудоспособно
                    '10-14': 'Младше трудоспособного возраста', '5-9': 'Младше трудоспособного возраста',
                    '0-4': 'Младше трудоспособного возраста'}
 ########################################################################################################################
-Main_MKB_dict = {0: 'MKB_GROUP_NAME_a',
-                 1: 'MKB_GROUP_NAME_b',
-                 2: 'MKB_GROUP_NAME_v',
-                 3: 'MKB_GROUP_NAME_g'}
+Main_MKB_dict = {0: 'mkb_group_name_a',
+                 1: 'mkb_group_name_b',
+                 2: 'mkb_group_name_v',
+                 3: 'mkb_group_name_g'}
 
-df_MKB = pd.read_sql_query('''SELECT * FROM public."MKB"''', cnx)
-df_MKB = df_MKB.drop(columns=['id'])
+df_MKB = pd.read_sql_query('''SELECT "mkb_code", "mkb_name", "mkb_group_name" FROM public."mkb_title_group"''', cnx)
 
-MKB_CODE_LIST = not_nan_filter(df_MKB, 'MKB_CODE')
-MKB_GROUP_LIST = not_nan_filter(df_MKB, 'MKB_GROUP_NAME')
+MKB_CODE_LIST = not_nan_filter(df_MKB, 'mkb_code')
+MKB_GROUP_LIST = not_nan_filter(df_MKB, 'mkb_group_name')
 MKB_GROUP_LIST_MAIN = ['НОВООБРАЗОВАНИЯ (C00-D48)', 'ПСИХИЧЕСКИЕ РАССТРОЙСТВА И РАССТРОЙСТВА ПОВЕДЕНИЯ (F00-F99)',
                        'БОЛЕЗНИ ЭНДОКРИННОЙ СИСТЕМЫ, РАССТРОЙСТВА ПИТАНИЯ И НАРУШЕНИЯ ОБМЕНА ВЕЩЕСТВ (E00-E90)',
                        'БОЛЕЗНИ НЕРВНОЙ СИСТЕМЫ (G00-G99)', 'БОЛЕЗНИ СИСТЕМЫ КРОВООБРАЩЕНИЯ (I00-I99)',
@@ -69,13 +68,12 @@ MKB_GROUP_LIST_MAIN = ['НОВООБРАЗОВАНИЯ (C00-D48)', 'ПСИХИЧ
                        'СИМПТОМЫ, ПРИЗНАКИ И ОТКЛОНЕНИЯ ОТ НОРМЫ, ВЫЯВЛЕННЫЕ ПРИ КЛИНИЧЕСКИХ И ЛАБОРАТОРНЫХ ИССЛЕДОВАНИЯХ, НЕ КЛАССИФИЦИРОВАННЫЕ В ДРУГИХ РУБРИКАХ (R00-R99)',
                        'ТРАВМЫ, ОТРАВЛЕНИЯ И НЕКОТОРЫЕ ДРУГИЕ ПОСЛЕДСТВИЯ ВОЗДЕЙСТВИЯ ВНЕШНИХ ПРИЧИН (S00-T98)']
 ########################################################################################################################
-MONTH_number = list(range(1, 13))
 MONTH_name = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь',
               'Октябрь', 'Ноябрь', 'Декабрь']
-MONTHS_dict = dict(zip(MONTH_number, MONTH_name))
+MONTHS_dict = dict(zip(list(range(1, 13)), MONTH_name))
 ########################################################################################################################
-df_FIO = pd.read_sql_query('''SELECT * FROM public."fio_recipient"''', cnx)
-FIO_dict = dict(zip(df_FIO.position, df_FIO.fio))
+df_FIO = pd.read_sql_query('''SELECT "uuid", "position", "fio" FROM public."recipient"''', cnx)
+FIO_dict = dict(zip(df_FIO.position, [list(tup) for tup in zip(df_FIO.fio, df_FIO.uuid)]))
 
 escalation_recipient_list = {1: 'Начальник Управления здравоохранения',
                              2: 'Заместитель главы администрации (вопросы здравоохранения, соц.защиты, труда и занятости населения, демографической политики)',
@@ -85,12 +83,12 @@ escalation_recipient_text = {1: 'Разобраться.',
                              2: 'Принять меры.',
                              3: 'Заслушать доклад.'}
 ########################################################################################################################
-df_Population = pd.read_sql_query('''SELECT * FROM public."population_view"''', cnx)
-df_Population = df_Population[(df_Population['Region'].isin(REGION)) &
-                              (df_Population['Territory'].isin(['Все население'])) &
-                              (df_Population['Gender'].isin(['Оба пола']))]
-df_Population.index = range(df_Population.shape[0])
-df_Population.columns = ['id', 'Feature', 'Region', 'Territory', 'GENDER', 'AGE_GROUP', 'Year', 'Population']
+# df_Population = pd.read_sql_query('''SELECT * FROM public."population_view"''', cnx)
+# df_Population = df_Population[(df_Population['region'].isin(REGION)) &
+#                               (df_Population['territory'].isin(['Все население'])) &
+#                               (df_Population['gender'].isin(['Оба пола']))]
+# df_Population.index = range(df_Population.shape[0])
+# df_Population.columns = ['id', 'feature', 'region', 'territory', 'gender', 'age_group', 'year', 'population']
 ########################################################################################################################
 results_files_path = r'../attached_file/'
 results_files_suff = f'1-{date.today().month}-{date.today().year}'
@@ -104,31 +102,35 @@ attached_file_names_dict = {1: ['death_elderly_выбросы_', 'График_d
                                 'death_sameperiod_output_', 'attached_file_death_sameperiod_']}
 ########################################################################################################################
 column_name_type_death_finished = {'gender': types.VARCHAR,
+                                   'date_born': types.Date,
+                                   'date_death': types.Date,
                                    'reason_a': types.VARCHAR, 'original_reason_a': types.INTEGER,
                                    'reason_b': types.VARCHAR, 'original_reason_b': types.INTEGER,
                                    'reason_v': types.VARCHAR, 'original_reason_v': types.INTEGER,
                                    'reason_g': types.VARCHAR, 'original_reason_g': types.INTEGER,
                                    'reason_d': types.VARCHAR,
-                                   'date_born': types.TIMESTAMP,
-                                   'date_death': types.TIMESTAMP,
                                    'day_death': types.INTEGER, 'week_death': types.INTEGER,
                                    'month_death': types.INTEGER, 'year_death': types.INTEGER,
                                    'age_death': types.INTEGER,
                                    'age_group_death': types.VARCHAR, 'employable_group': types.VARCHAR,
-                                   'MKB_NAME_a': types.Text, 'MKB_GROUP_NAME_a': types.Text,
-                                   'MKB_NAME_b': types.Text, 'MKB_GROUP_NAME_b': types.Text,
-                                   'MKB_NAME_v': types.Text, 'MKB_GROUP_NAME_v': types.Text,
-                                   'MKB_NAME_g': types.Text, 'MKB_GROUP_NAME_g': types.Text,
-                                   'MKB_NAME_d': types.Text, 'MKB_GROUP_NAME_d': types.Text,
+                                   'mkb_name_a': types.Text, 'mkb_group_name_a': types.Text,
+                                   'mkb_name_b': types.Text, 'mkb_group_name_b': types.Text,
+                                   'mkb_name_v': types.Text, 'mkb_group_name_v': types.Text,
+                                   'mkb_name_g': types.Text, 'mkb_group_name_g': types.Text,
+                                   'mkb_name_d': types.Text, 'mkb_group_name_d': types.Text,
                                    'region_location': types.VARCHAR, 'district_location': types.VARCHAR,
                                    'locality_location': types.VARCHAR, 'street_location': types.VARCHAR,
                                    'locality_death': types.VARCHAR, 'street_death': types.VARCHAR,
-                                   'MKB_GROUP_NAME_original_reason': types.Text, 'DATE': types.Date}
+                                   'mkb_group_name_original_reason': types.Text, 'date_period': types.Date}
 ########################################################################################################################
 
 
 if __name__ == '__main__':
-    print(df_Population.loc[len(df_Population) - 1])
-    print(MKB_GROUP_LIST[-1])
-    print(REGION)
-    print(df_Population[:10])
+    # df_FIO = pd.read_sql_query('''SELECT "uuid", "position", "fio" FROM public."recipient"''', cnx)
+    # print(df_FIO.position)
+    # print(df_FIO.fio)
+    # print(df_FIO.uuid)
+    # print(FIO_dict)
+    # print(FIO_dict['Глава администрации'][1])
+    pass
+
