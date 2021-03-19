@@ -6,9 +6,10 @@ import statsmodels.api as sm
 from datetime import date, datetime
 
 from connect_PostGres import cnx
-from ISU_death_lists_dict import df_Population, REGION, MONTHS_dict, FIO_dict, MKB_GROUP_LIST_MAIN, escalation_recipient_list
+from ISU_death_lists_dict import df_population, REGION, MONTHS_dict, task_type_dict
+from ISU_death_lists_dict import FIO_dict, MKB_GROUP_LIST_MAIN, escalation_recipient_list
 from ISU_death_functions import time_factor_calculation, get_df_death_finished, get_db_last_index
-from ISU_death_functions import make_recipient, make_corr_for_recipient, make_release_date, make_recipient_fio
+from ISU_death_functions import make_recipient, make_corr_for_recipient, make_release_date, make_recipient_uuid, make_recipient_fio
 from ISU_death_lists_dict import results_files_path, results_files_suff, attached_file_names_dict
 
 import plotly.graph_objects as go
@@ -64,12 +65,12 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
         for last_year in YEARS[1:]:
             age_groups_elderly = ['55-59', '60-64', '65-69', '70-74', '75-79', '80-84', '85-89', '90-94', '95-99',
                                   '70 лет и старше', '85 и старше', '100 и более', 'Всего']
-            elderly = df_Population[df_Population.Region.isin([region]) &
-                                    df_Population.Year.isin([last_year]) &
-                                    df_Population.AGE_GROUP.isin(age_groups_elderly[:-1])].Population.sum()
-            population = df_Population[df_Population.Region.isin([region]) &
-                                       df_Population.Year.isin([last_year]) &
-                                       df_Population.AGE_GROUP.isin(age_groups_elderly[-1:])].Population.sum()
+            elderly = df_population[df_population.region.isin([region]) &
+                                    df_population.year.isin([last_year]) &
+                                    df_population.age_group.isin(age_groups_elderly[:-1])].population.sum()
+            population = df_population[df_population.region.isin([region]) &
+                                       df_population.year.isin([last_year]) &
+                                       df_population.age_group.isin(age_groups_elderly[-1:])].population.sum()
             proportion = round(elderly / population * 100, 2)
 
             df_proportion_elderly.loc[k] = {'Region': region, 'Year': last_year, 'Elderly': elderly,
@@ -78,17 +79,17 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
 
     # Количество смертей за месяц + временной коэффициент
     print(f'Расчет количества смертей за месяц и временного коэффициента в разрезе муниципальных образований...')
-    df_amount_death = pd.DataFrame(columns=['Region', 'DATE', 'AmountDeath'])
+    df_amount_death = pd.DataFrame(columns=['Region', 'date_period', 'AmountDeath'])
     k = 0
     for region in REGION[:]:
         for last_date in DATES:
-            df_amount_death.loc[k] = {'Region': region, 'DATE': last_date,
+            df_amount_death.loc[k] = {'Region': region, 'date_period': last_date,
                                       'AmountDeath': len(df_death[(df_death['district_location'].isin([region])) &
-                                                                  (df_death['DATE'].isin([last_date]))])}
+                                                                  (df_death['date_period'].isin([last_date]))])}
             k += 1
     for i in df_amount_death.index:
-        df_amount_death.loc[i, 'Year'] = df_amount_death.loc[i, 'DATE'].year
-        df_amount_death.loc[i, 'Month'] = df_amount_death.loc[i, 'DATE'].month
+        df_amount_death.loc[i, 'Year'] = df_amount_death.loc[i, 'date_period'].year
+        df_amount_death.loc[i, 'Month'] = df_amount_death.loc[i, 'date_period'].month
         df_amount_death.loc[i, 'time_factor_month'] = time_factor_calculation(df_amount_death.loc[i, 'Year'],
                                                                               df_amount_death.loc[i, 'Month'])[0]
         df_amount_death.loc[i, 'time_factor_period'] = time_factor_calculation(df_amount_death.loc[i, 'Year'],
@@ -130,11 +131,11 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
     # Поиск аномалий. ТРЕНД ЗА ПЕРИОД 2018-2020
     print('Поиск аномальных отклонений от тренда - уровень смертности не соответствует возрастной \
 структуре муниципального образования')
-    RESULTS = pd.DataFrame(columns=['Region', 'DATE', 'AmountDeath', 'Year', 'Month',
+    RESULTS = pd.DataFrame(columns=['Region', 'date_period', 'AmountDeath', 'Year', 'Month',
                                     'time_factor_month', 'time_factor_period',
                                     'AvgAgeDeath', 'Elderly', 'Population', 'ProportionElderly',
                                     'AmountDeath/Population*time_factor_month', 'bestfit', 'Deviation from trend'])
-    blowout = pd.DataFrame(columns=['Region', 'DATE', 'AmountDeath', 'Year', 'Month',
+    blowout = pd.DataFrame(columns=['Region', 'date_period', 'AmountDeath', 'Year', 'Month',
                                     'time_factor_month', 'time_factor_period',
                                     'AvgAgeDeath', 'Population', 'ProportionElderly',
                                     'AmountDeath/Population*time_factor_month', 'bestfit', 'Deviation from trend'])
@@ -155,8 +156,8 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
     blowout = pd.concat([blowout, blowout_])
     # аномалии за последний месяц
     last_year = sorted(df_Results.Year.unique())[-1]
-    last_date = sorted(df_Results.DATE.unique())[-1]
-    results_blowout = blowout[blowout.Year.isin([last_year]) & blowout.DATE.isin([last_date])]
+    last_date = sorted(df_Results.date_period.unique())[-1]
+    results_blowout = blowout[blowout.Year.isin([last_year]) & blowout.date_period.isin([last_date])]
 ########################################################################################################################
     # Рисуем и сохраняем график регрессии
     print('Подготавливаем визуализацию...')
