@@ -194,7 +194,7 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
     # Формируем результат работы и записываем в БД
     print('Формируем перечень задач, назначаем ответственных и сроки...')
     output = pd.DataFrame(columns=['recipient_uuid', 'message', 'deadline', 'release',
-                                   'task_type_uuid', 'uuid'])
+                                   'task_type_uuid', 'uuid', 'title'])
     k = get_db_last_index('death_output')
     for i in results_blowout.index:
         recipient = make_recipient(results_blowout.loc[i, 'Region'])
@@ -204,7 +204,7 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
         release = make_release_date(results_blowout.loc[i, 'date_period'])
 
         task_type_uuid = task_type_dict['Смертность_П1_55+'][0]
-        # title = task_type_dict['Смертность_П1_55+'][1]
+        title = task_type_dict['Смертность_П1_55+'][1]
         month = MONTHS_dict[results_blowout.loc[i, 'Month']]
         last_year = int(results_blowout.loc[i, 'Year'])
         message = f'Проанализировать причины высокого уровня смертности в районе в период {month} {last_year} года'
@@ -212,7 +212,8 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
         output.loc[k] = {'recipient_uuid': recipient_uuid, 'message': f'ИСУ обычная {message}',
                          'deadline': str(date.today() + pd.Timedelta(days=14)), 'release': release,
                          'task_type_uuid': task_type_uuid,
-                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}')
+                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}'),
+                         'title': title
                          }
         k += 1
 ########################################################################################################################
