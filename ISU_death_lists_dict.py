@@ -6,6 +6,7 @@ from functools import partial
 from operator import is_not
 from datetime import date
 from sqlalchemy import types
+import uuid
 
 
 def not_nan_filter(df, col):
@@ -13,6 +14,16 @@ def not_nan_filter(df, col):
     return unique_list
 
 
+def get_key(d, value):
+    """
+    Функция для восстановления ключа по значению
+    :param d: словарь dict
+    :param value: значение, для которого ищем ключ
+    :return: ключ из словаря
+    """
+    for keys, values in d.items():
+        if value in values:
+            return keys
 ########################################################################################################################
 REGION = ['Воловский', 'Грязинский', 'Данковский', 'Добринский', 'Добровский', 'Долгоруковский', 'Елецкий',
           'Задонский', 'Измалковский', 'Краснинский', 'Лебедянский', 'Лев-Толстовский', 'Липецкий', 'Становлянский',
@@ -129,12 +140,11 @@ column_name_type_death_finished = {'gender': types.VARCHAR,
 
 
 if __name__ == '__main__':
-    # df_FIO = pd.read_sql_query('''SELECT "uuid", "position", "fio" FROM public."recipient"''', cnx)
     # print(df_FIO.position)
     # print(df_FIO.fio)
-    # print(df_FIO.uuid)
-    # print(FIO_dict)
-    # print(FIO_dict['Глава администрации'][1])
-    print(task_type_dict)
+    # print(df_FIO['uuid'].values)
+    print(FIO_dict)
+    print(get_key(FIO_dict, 'Артамонов Игорь Георгиевич'))
+    print(get_key(FIO_dict, uuid.UUID('c5721b5f-a231-3408-b85e-d3bf639dd248')))
     pass
 
