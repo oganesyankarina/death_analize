@@ -171,13 +171,14 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
     # Формируем результат работы и записываем в БД
     print('Формируем перечень задач, назначаем ответственных и сроки...')
     output = pd.DataFrame(columns=['recipient_uuid', 'message', 'deadline', 'release',
-                                   'task_type_uuid', 'title', 'uuid', 'mo'])
+                                   'task_type_uuid', 'uuid', 'mo'])
     k = get_db_last_index('death_output')
     for i in results_blowout.index:
         mo = results_blowout.loc[i, 'Region']
         recipient = make_recipient(mo)
         fio = make_recipient_fio(recipient)
         recipient_uuid = make_recipient_uuid(recipient)
+
         release = make_release_date(results_blowout.loc[i, 'date_period'])
 
         MKB = results_blowout.loc[i, 'MKB']
@@ -185,14 +186,15 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
         # task_type = f'Смертность_П2_3monthgrow_{MKB_id}'
         task_type_uuid = task_type_dict[f'Смертность_П2_3monthgrow_{MKB_id}'][0]
         # title = f'Рост смертности от заболеваний из группы {MKB}'
-        title = task_type_dict[f'Смертность_П2_3monthgrow_{MKB_id}'][1]
+        # title = task_type_dict[f'Смертность_П2_3monthgrow_{MKB_id}'][1]
         message = f'Проанализировать и принять меры по снижению смертности. На протяжении последних трех месяцев в районе наблюдается рост смертности от заболеваний из Группы {MKB}'
 
         output.loc[k] = {'recipient_uuid': recipient_uuid, 'message': f'ИСУ обычная {message}',
                          'deadline': str(date.today() + pd.Timedelta(days=14)), 'release': release,
                          'task_type_uuid': task_type_uuid,
-                         'title': title, 'mo': mo,
-                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}')}
+                         'mo': mo,
+                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}')
+                         }
         k += 1
 ########################################################################################################################
     # attached_file = pd.DataFrame(columns=['task_uuid', 'file'])
@@ -275,29 +277,30 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
     # Формируем результат работы и записываем в БД
     print('Формируем перечень задач, назначаем ответственных и сроки...')
     output = pd.DataFrame(columns=['recipient_uuid', 'message', 'deadline', 'release',
-                                   'task_type_uuid', 'title', 'uuid', 'mo'])
+                                   'task_type_uuid', 'uuid', 'mo'])
     k = get_db_last_index('death_output')
     for i in results_blowout.index:
         mo = results_blowout.loc[i, 'Region']
         recipient = make_recipient(mo)
         fio = make_recipient_fio(recipient)
         recipient_uuid = make_recipient_uuid(recipient)
+
         release = make_release_date(results_blowout.loc[i, 'date_period'])
 
         MKB = results_blowout.loc[i, 'MKB']
         MKB_id = MKB_GROUP_LIST_MAIN.index(MKB)
-
         # task_type = f'Смертность_П2_sameperiod_{MKB_id}'
         task_type_uuid = task_type_dict[f'Смертность_П2_sameperiod_{MKB_id}'][0]
         # title = f'Рост смертности от заболеваний из группы {MKB} по сравнению с АППГ'
-        title = task_type_dict[f'Смертность_П2_sameperiod_{MKB_id}'][1]
+        # title = task_type_dict[f'Смертность_П2_sameperiod_{MKB_id}'][1]
         message = f'Проанализировать и принять меры по снижению смертности. В районе по сравнению с аналогичным периодом прошлого года наблюдается значительный рост смертности от заболеваний из Группы {MKB}'
 
         output.loc[k] = {'recipient_uuid': recipient_uuid, 'message': f'ИСУ обычная {message}',
                          'deadline': str(date.today() + pd.Timedelta(days=14)), 'release': release,
                          'task_type_uuid': task_type_uuid,
-                         'title': title, 'mo': mo,
-                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}')}
+                         'mo': mo,
+                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}')
+                         }
         k += 1
 ########################################################################################################################
     # attached_file = pd.DataFrame(columns=['task_uuid', 'file'])
