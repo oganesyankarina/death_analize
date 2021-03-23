@@ -96,6 +96,8 @@ escalation_recipient_text = {1: 'Разобраться.',
 ########################################################################################################################
 df_task_type = pd.read_sql_query('''SELECT "name", "uuid", "title" FROM public."death_task_type"''', cnx)
 task_type_dict = dict(zip(df_task_type.name, [list(tup) for tup in zip(df_task_type.uuid, df_task_type.title)]))
+main_task_type = df_task_type.uuid.values[:19]
+escalation_task_type = df_task_type.uuid.values[19:]
 ########################################################################################################################
 df_population = pd.read_sql_query('''SELECT * FROM public."population_view"''', cnx)
 df_population = df_population[(df_population['region'].isin(REGION)) &
@@ -140,11 +142,13 @@ column_name_type_death_finished = {'gender': types.VARCHAR,
 
 
 if __name__ == '__main__':
-    # print(df_FIO.position)
-    # print(df_FIO.fio)
-    # print(df_FIO['uuid'].values)
-    print(FIO_dict)
-    print(get_key(FIO_dict, 'Артамонов Игорь Георгиевич'))
-    print(get_key(FIO_dict, uuid.UUID('c5721b5f-a231-3408-b85e-d3bf639dd248')))
+    # print(FIO_dict)
+    # print(get_key(FIO_dict, 'Артамонов Игорь Георгиевич'))
+    # print(get_key(FIO_dict, uuid.UUID('c5721b5f-a231-3408-b85e-d3bf639dd248')))
+    
+    # print(task_type_dict.items())
+    # print(task_type_dict)
+    # print(task_type_dict.keys())
+    # print(task_type_dict[get_key(task_type_dict, 'Ваша задача эcкалирована на уровень - Начальник Управления здравоохранения')][0])
     pass
 

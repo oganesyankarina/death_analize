@@ -43,25 +43,14 @@ def make_table(name_list, title_list):
 
 
 if __name__ == '__main__':
-    print(make_task_list())
-    df_task_type = make_table(make_task_list()[0], make_task_list()[1])
-    print(df_task_type)
+    # print(make_task_list())
+    # df_task_type = make_table(make_task_list()[0], make_task_list()[1])
+    # print(df_task_type)
     # print([' '.join(list(tup)) for tup in zip(make_task_list()[0], make_task_list()[1])])
-    df_task_type.to_sql('death_task_type', cnx, if_exists='append', index_label='id')
+    # df_task_type.to_sql('death_task_type', cnx, if_exists='append', index_label='id')
+
     # print([x for x in escalation_recipient_list.values()])
     # print([x for x in escalation_recipient_text.values()])
-    #
-    # task_type = []
-    # task_title = []
-    # for ind, escalation_recipient in enumerate(escalation_recipient_list.values()):
-    #     print(ind, escalation_recipient)
-    #     if ind == 0:
-    #         task_type.extend([f'Уведомление исполнителя. Эскалация на уровень - {escalation_recipient}'])
-    #         task_title.extend([f'Ваша задача эcкалирована на уровень - {escalation_recipient}'])
-    #     else:
-    #         task_type.extend([f'Уведомление исполнителя. Эскалация на уровень - {escalation_recipient}',
-    #                           f'Уведомление. Эскалация на уровень - {escalation_recipient}'])
-    #         task_title.extend([f'Ваша задача эcкалирована на уровень - {escalation_recipient}',
-    #                            f'Задача эcкалирована на уровень - {escalation_recipient}'])
     # print([list(tup) for tup in zip(task_type, task_title)])
 
+    pass
