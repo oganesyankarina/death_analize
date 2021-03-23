@@ -110,11 +110,11 @@ results_files_path = r'../attached_file/'
 results_files_suff = f'1-{date.today().month}-{date.today().year}'
 
 """ Структура для хранения имен прикрепляемых файлов"""
-attached_file_names_dict = {1: ['death_elderly_выбросы_', 'График_death_elderly_',
+attached_file_names_dict = {1: ['Рассчеты_elderly_', 'График_смертность_',
                                 'death_elderly_output_', 'attached_file_death_elderly_'],
-                            2: ['death_3monthgrow_выбросы_', 'График_death_MKB_',
+                            2: ['Рассчеты_3monthgrow_', 'График_динамика_смертности_МКБ',
                                 'death_3monthgrow_output_', 'attached_file_death_3monthgrow_'],
-                            3: ['death_sameperiod_выбросы_', 'График_death_MKB_',
+                            3: ['Рассчеты_sameperiod_', 'График_динамика_смертности_МКБ',
                                 'death_sameperiod_output_', 'attached_file_death_sameperiod_']}
 ########################################################################################################################
 column_name_type_death_finished = {'gender': types.VARCHAR,
@@ -145,7 +145,7 @@ if __name__ == '__main__':
     # print(FIO_dict)
     # print(get_key(FIO_dict, 'Артамонов Игорь Георгиевич'))
     # print(get_key(FIO_dict, uuid.UUID('c5721b5f-a231-3408-b85e-d3bf639dd248')))
-    
+
     # print(task_type_dict.items())
     # print(task_type_dict)
     # print(task_type_dict.keys())
