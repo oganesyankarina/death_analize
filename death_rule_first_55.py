@@ -217,20 +217,20 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
                          }
         k += 1
 ########################################################################################################################
-    # attached_file = pd.DataFrame(columns=['task_uuid', 'file'])
-    # k = get_db_last_index('attached_file_death')
-    # for i in output.index:
-    #     uuid_ = output.loc[i, 'uuid']
-    #
-    #     attached_file.loc[k] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][0]}{results_files_suff}.xlsx'}
-    #     attached_file.loc[k+1] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][1]}{results_files_suff}.html'}
-    #
-    #     k += 2
+    attached_file = pd.DataFrame(columns=['uuid', 'task_uuid', 'file_title', 'file_path'])
+    k = get_db_last_index('death_attached_files')
+    for i in output.index:
+        uuid_ = output.loc[i, 'uuid']
+
+        attached_file.loc[k] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][0]}{results_files_suff}.xlsx'}
+        attached_file.loc[k+1] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][1]}{results_files_suff}.html'}
+
+        k += 2
 ########################################################################################################################
     print('Сохраняем результаты...')
     if save_to_sql:
         output.to_sql('death_output', cnx, if_exists='append', index_label='id')
-        # attached_file.to_sql('attached_file_death', cnx, if_exists='append', index_label='id')
+        # attached_file.to_sql('death_attached_files', cnx, if_exists='append', index_label='id')
 
     if save_to_excel:
         # with pd.ExcelWriter(f'{results_files_path}death_elderly_{results_files_suff}.xlsx', engine='openpyxl') as writer:

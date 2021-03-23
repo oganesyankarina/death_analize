@@ -198,8 +198,8 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
                          }
         k += 1
 ########################################################################################################################
-    # attached_file = pd.DataFrame(columns=['task_uuid', 'file'])
-    # k = get_db_last_index('attached_file_death')
+    # attached_file = pd.DataFrame(columns=['uuid', 'task_uuid', 'file_title', 'file_path'])
+    # k = get_db_last_index('death_attached_files')
     # for i in output.index:
     #     mo = output.loc[i, 'mo']
     #     uuid_ = output.loc[i, 'uuid']
@@ -215,7 +215,7 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
     print('Сохраняем результаты...')
     if save_to_sql:
         output.drop('mo', axis=1).to_sql('death_output', cnx, if_exists='append', index_label='id')
-        # attached_file.to_sql('attached_file_death', cnx, if_exists='append', index_label='id')
+        # attached_file.to_sql('death_attached_files', cnx, if_exists='append', index_label='id')
     if save_to_excel:
         # with pd.ExcelWriter(f'{results_files_path}death_3monthgrow_{results_files_suff}.xlsx', engine='openpyxl') as writer:
         #     df_Results.to_excel(writer, sheet_name=f'3monthgrow', header=True, index=False, encoding='1251')
@@ -305,8 +305,8 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
                          }
         k += 1
 ########################################################################################################################
-    # attached_file = pd.DataFrame(columns=['task_uuid', 'file'])
-    # k = get_db_last_index('attached_file_death')
+    # attached_file = pd.DataFrame(columns=['uuid', 'task_uuid', 'file_title', 'file_path'])
+    # k = get_db_last_index('death_attached_files')
     # for i in output.index:
     #     mo = output.loc[i, 'mo']
     #     uuid_ = output.loc[i, 'uuid']
@@ -322,7 +322,7 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
     print('Сохраняем результаты...')
     if save_to_sql:
         output.drop('mo', axis=1).to_sql('death_output', cnx, if_exists='append', index_label='id')
-        # attached_file.to_sql('attached_file_death', cnx, if_exists='append', index_label='id')
+        # attached_file.to_sql('death_attached_files', cnx, if_exists='append', index_label='id')
     if save_to_excel:
         # with pd.ExcelWriter(f'{results_files_path}death_sameperiod_{results_files_suff}.xlsx', engine='openpyxl') as writer:
         #     df_Results.to_excel(writer, sheet_name=f'sameperiod', header=True, index=False, encoding='1251')
