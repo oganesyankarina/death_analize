@@ -215,7 +215,7 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
         output.loc[k] = {'recipient_uuid': recipient_uuid, 'message': f'ИСУ обычная {message}',
                          'deadline': str(date.today() + pd.Timedelta(days=14)), 'release': release,
                          'task_type_uuid': task_type_uuid,
-                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}'),
+                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{recipient_uuid}{release}ИСУ обычная {message}'),
                          'title': title
                          }
         k += 1
@@ -264,4 +264,4 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
 if __name__ == '__main__':
     logging.basicConfig(filename='logfile.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s',
                         level=logging.INFO)
-    death_rule_first_55(save_to_sql=True, save_to_excel=True)
+    death_rule_first_55(save_to_sql=False, save_to_excel=True)

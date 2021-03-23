@@ -19,10 +19,11 @@ if __name__ == '__main__':
         death_preprocessing(save_to_sql=True, save_to_excel=False)
         death_rule_first_55(save_to_sql=True, save_to_excel=True)
         death_rule_second_new(save_to_sql=True, save_to_excel=True)
-        death_escalation(save_to_sql=True, save_to_excel=True)
+        death_escalation(save_to_sql=True, save_to_excel=False)
         print(f'The end of the mortality analysis algorithm. elapsed time {datetime.now() - start_time_ALL}')
         logging.info(f'The end of the mortality analysis algorithm. elapsed time {datetime.now() - start_time_ALL}')
 
     except Exception as e:
+        print('The execution of the mortality analysis algorithm was not completed due to an error')
         logging.exception('Exception occurred')
         logging.info('The execution of the mortality analysis algorithm was not completed due to an error')

@@ -8,6 +8,8 @@ from datetime import date
 from sqlalchemy import types
 import uuid
 
+import plotly.graph_objects as go
+
 
 def not_nan_filter(df, col):
     unique_list = list(filter(partial(is_not, np.nan), df[col].unique()))
@@ -106,7 +108,7 @@ df_population = df_population[(df_population['region'].isin(REGION)) &
 df_population.index = range(df_population.shape[0])
 df_population.columns = ['region', 'territory', 'gender', 'age_group', 'year', 'population']
 ########################################################################################################################
-results_files_path = r'../attached_file/'
+results_files_path = r'attached_files/'
 results_files_suff = f'1-{date.today().month}-{date.today().year}'
 
 """ Структура для хранения имен прикрепляемых файлов"""
@@ -151,4 +153,3 @@ if __name__ == '__main__':
     # print(task_type_dict.keys())
     # print(task_type_dict[get_key(task_type_dict, 'Ваша задача эcкалирована на уровень - Начальник Управления здравоохранения')][0])
     pass
-

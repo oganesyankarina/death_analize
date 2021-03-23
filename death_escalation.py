@@ -102,7 +102,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
                          'release': release,
                          'task_type_uuid': task_type_dict[get_key(task_type_dict, title)][0],
                          'title': title,
-                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
+                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{original_recipient_uuid}{release}{message}')}
         k += 1
     # Задача для получателя на уровень эскалации и уведомления на промежуточные уровни
     for escalation_level in RESULTS.escalation_level.unique():
@@ -127,7 +127,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
                              'release': release,
                              'task_type_uuid': task_type_dict[get_key(task_type_dict, title)][0],
                              'title': title,
-                             'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
+                             'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{escalation_recipient_uuid}{release}{message}')}
             # Предупреждения на промежуточные уровни
             if escalation_level > 1:
                 for j in range(1, escalation_level):
@@ -141,7 +141,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
                         'release': release,
                         'task_type_uuid': task_type_dict[get_key(task_type_dict, title)][0],
                         'title': title,
-                        'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}{message}')}
+                        'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{make_recipient_uuid(escalation_recipient_list[escalation_level - j])}{release}{message}')}
             k += escalation_level
 ########################################################################################################################
     if save_to_sql:
@@ -161,4 +161,4 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
 if __name__ == '__main__':
     logging.basicConfig(filename='logfile.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s',
                         level=logging.INFO)
-    death_escalation(save_to_sql=True, save_to_excel=True)
+    death_escalation(save_to_sql=False, save_to_excel=True)

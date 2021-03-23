@@ -8,3 +8,5 @@ logfile.log
 __pycache__/
 
 *.ipynb
+
+attached_files/

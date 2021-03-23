@@ -198,7 +198,7 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
                          'deadline': str(date.today() + pd.Timedelta(days=14)), 'release': release,
                          'task_type_uuid': task_type_uuid,
                          'mo': mo,
-                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}'),
+                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{recipient_uuid}{release}ИСУ обычная {message}'),
                          'title': title
                          }
         k += 1
@@ -314,7 +314,7 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
                          'deadline': str(date.today() + pd.Timedelta(days=14)), 'release': release,
                          'task_type_uuid': task_type_uuid,
                          'mo': mo,
-                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{fio}{release}ИСУ обычная {message}'),
+                         'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, f'{recipient_uuid}{release}ИСУ обычная {message}'),
                          'title': title
                          }
         k += 1
