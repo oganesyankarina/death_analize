@@ -112,9 +112,9 @@ results_files_suff = f'1-{date.today().month}-{date.today().year}'
 """ Структура для хранения имен прикрепляемых файлов"""
 attached_file_names_dict = {1: ['Рассчеты_elderly_', 'График_смертность_',
                                 'death_elderly_output_', 'attached_file_death_elderly_'],
-                            2: ['Рассчеты_3monthgrow_', 'График_динамика_смертности_МКБ',
+                            2: ['Рассчеты_3monthgrow_', 'График_динамика_смертности_МКБ_',
                                 'death_3monthgrow_output_', 'attached_file_death_3monthgrow_'],
-                            3: ['Рассчеты_sameperiod_', 'График_динамика_смертности_МКБ',
+                            3: ['Рассчеты_sameperiod_', 'График_динамика_смертности_МКБ_',
                                 'death_sameperiod_output_', 'attached_file_death_sameperiod_']}
 ########################################################################################################################
 column_name_type_death_finished = {'gender': types.VARCHAR,

@@ -189,7 +189,10 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
     fig.update_layout(xaxis_title=f'Доля населения в возрасте {age} лет и старше',
                       yaxis_title='Количество умерших за месяц/Численность населения<br>*100 тыс. чел.*Временной коэффициент',
                       title=f'Соотношение Доля населения в возрасте {age} лет и старше и <br>Количество умерших за месяц/Численность населения*100 тыс. чел.*Временной коэффициент')
-    fig.write_html(f'{results_files_path}{attached_file_names_dict[1][1]}{results_files_suff}.html')
+
+    file_title2 = f'{attached_file_names_dict[1][1]}{results_files_suff}'
+    file_path2 = str(uuid.uuid3(uuid.NAMESPACE_DNS, f'{file_title2}').hex) + '.html'
+    fig.write_html(f'{results_files_path}{file_path2}')
 ########################################################################################################################
     # Формируем результат работы и записываем в БД
     print('Формируем перечень задач, назначаем ответственных и сроки...')
@@ -220,28 +223,34 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
     attached_file = pd.DataFrame(columns=['uuid', 'task_uuid', 'file_title', 'file_path'])
     k = get_db_last_index('death_attached_files')
     for i in output.index:
-        uuid_ = output.loc[i, 'uuid']
+        task_uuid = output.loc[i, 'uuid']
+        file_title1 = f'{attached_file_names_dict[1][0]}{results_files_suff}'
+        file_title2 = f'{attached_file_names_dict[1][1]}{results_files_suff}'
+        file_path1 = str(uuid.uuid3(uuid.NAMESPACE_DNS, f'{file_title1}').hex)+'.xlsx'
+        file_path2 = str(uuid.uuid3(uuid.NAMESPACE_DNS, f'{file_title2}').hex)+'.html'
 
-        attached_file.loc[k] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][0]}{results_files_suff}.xlsx'}
-        attached_file.loc[k+1] = {'task_uuid': uuid_, 'file': f'{attached_file_names_dict[1][1]}{results_files_suff}.html'}
-
+        attached_file.loc[k] = {'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, str(task_uuid)+file_path1),
+                                'task_uuid': task_uuid,
+                                'file_title': file_title1,
+                                'file_path': file_path1}
+        attached_file.loc[k+1] = {'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, str(task_uuid)+file_path2),
+                                  'task_uuid': task_uuid,
+                                  'file_title': file_title2,
+                                  'file_path': file_path2}
         k += 2
 ########################################################################################################################
     print('Сохраняем результаты...')
     if save_to_sql:
         output.to_sql('death_output', cnx, if_exists='append', index_label='id')
-        # attached_file.to_sql('death_attached_files', cnx, if_exists='append', index_label='id')
+        attached_file.to_sql('death_attached_files', cnx, if_exists='append', index_label='id')
 
     if save_to_excel:
         # with pd.ExcelWriter(f'{results_files_path}death_elderly_{results_files_suff}.xlsx', engine='openpyxl') as writer:
         #     RESULTS.to_excel(writer, sheet_name=f'elderly', header=True, index=False, encoding='1251')
-
-        with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[1][0]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
-            results_blowout.to_excel(writer, sheet_name=f'elderly_выбросы', header=True, index=False, encoding='1251')
-
-        with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[1][2]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
-            output.to_excel(writer, sheet_name=f'elderly', header=True, index=False, encoding='1251')
-
+        with pd.ExcelWriter(f'{results_files_path}{file_path1}', engine='openpyxl') as writer:
+            results_blowout.to_excel(writer, sheet_name=f'elderly', header=True, index=False, encoding='1251')
+        # with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[1][2]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
+        #     output.to_excel(writer, sheet_name=f'elderly_output', header=True, index=False, encoding='1251')
         # with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[1][3]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
         #     attached_file.to_excel(writer, sheet_name=f'attached_file_elderly', header=True, index=False, encoding='1251')
 ########################################################################################################################
@@ -255,4 +264,4 @@ def death_rule_first_55(save_to_sql=True, save_to_excel=True):
 if __name__ == '__main__':
     logging.basicConfig(filename='logfile.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s',
                         level=logging.INFO)
-    death_rule_first_55(save_to_sql=True, save_to_excel=False)
+    death_rule_first_55(save_to_sql=True, save_to_excel=True)

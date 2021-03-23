@@ -110,7 +110,9 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
                       title=dict(text='Динамика смертности по группам МКБ в Липецкой области<br>(с учетом численности населения и временного коэффициента)',
                                  font=dict(size=16), x=0.01, y=0.98, xanchor='left', yanchor='top'))
 
-    fig.write_html(f'{results_files_path}{attached_file_names_dict[2][1]}{results_files_suff}.html')
+    file_title2 = f'{attached_file_names_dict[2][1]}{results_files_suff}'
+    file_path2 = str(uuid.uuid3(uuid.NAMESPACE_DNS, f'{file_title2}').hex) + '.html'
+    fig.write_html(f'{results_files_path}{file_path2}')
 ########################################################################################################################
     print('Подготавливаем визуализации для отдельных районов Липецкой области...')
     for Region in REGION:
@@ -141,7 +143,10 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
                           legend=dict(yanchor='bottom', xanchor='left', y=0.73, x=1.0, font=dict(size=10), ),
                           title=dict(text=f'<b>{Region}{corr}</b><br>Динамика смертности по группам МКБ<br>(с учетом численности населения и временного коэффициента)',
                                      font=dict(size=16), x=0.01, y=0.98, xanchor='left', yanchor='top'))
-        fig.write_html(f'{results_files_path}{attached_file_names_dict[2][1]}{Region}_{results_files_suff}.html')
+
+        file_title3 = f'{attached_file_names_dict[2][1]}{Region}_{results_files_suff}'
+        file_path3 = str(uuid.uuid3(uuid.NAMESPACE_DNS, f'{file_title3}').hex) + '.html'
+        fig.write_html(f'{results_files_path}{file_path3}')
 ########################################################################################################################
     # Поиск аномалий. Рост смертности три периода подряд.
     print('Ищем ситуации роста на протяжении трех месяцев...')
@@ -198,35 +203,44 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
                          }
         k += 1
 ########################################################################################################################
-    # attached_file = pd.DataFrame(columns=['uuid', 'task_uuid', 'file_title', 'file_path'])
-    # k = get_db_last_index('death_attached_files')
-    # for i in output.index:
-    #     mo = output.loc[i, 'mo']
-    #     uuid_ = output.loc[i, 'uuid']
-    #
-    #     attached_file.loc[k] = {'task_uuid': uuid_,
-    #                             'file': f'{attached_file_names_dict[2][0]}{results_files_suff}.xlsx'}
-    #     attached_file.loc[k + 1] = {'task_uuid': uuid_,
-    #                                 'file': f'{attached_file_names_dict[2][1]}{results_files_suff}.html'}
-    #     attached_file.loc[k + 2] = {'task_uuid': uuid_,
-    #                                 'file': f'{attached_file_names_dict[2][1]}{mo}_{results_files_suff}.html'}
-    #     k += 3
+    attached_file = pd.DataFrame(columns=['uuid', 'task_uuid', 'file_title', 'file_path'])
+    k = get_db_last_index('death_attached_files')
+    for i in output.index:
+        mo = output.loc[i, 'mo']
+        task_uuid = output.loc[i, 'uuid']
+        file_title1 = f'{attached_file_names_dict[2][0]}{results_files_suff}'
+        file_title2 = f'{attached_file_names_dict[2][1]}{results_files_suff}'
+        file_title3 = f'{attached_file_names_dict[2][1]}{mo}_{results_files_suff}'
+        file_path1 = str(uuid.uuid3(uuid.NAMESPACE_DNS, f'{file_title1}').hex)+'.xlsx'
+        file_path2 = str(uuid.uuid3(uuid.NAMESPACE_DNS, f'{file_title2}').hex)+'.html'
+        file_path3 = str(uuid.uuid3(uuid.NAMESPACE_DNS, f'{file_title3}').hex)+'.html'
+
+        attached_file.loc[k] = {'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, str(task_uuid)+file_path1),
+                                'task_uuid': task_uuid,
+                                'file_title': file_title1,
+                                'file_path': file_path1}
+        attached_file.loc[k + 1] = {'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, str(task_uuid)+file_path2),
+                                    'task_uuid': task_uuid,
+                                    'file_title': file_title2,
+                                    'file_path': file_path2}
+        attached_file.loc[k + 2] = {'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, str(task_uuid)+file_path3),
+                                    'task_uuid': task_uuid,
+                                    'file_title': file_title3,
+                                    'file_path': file_path3}
+        k += 3
 ########################################################################################################################
     print('Сохраняем результаты...')
     if save_to_sql:
         output.drop('mo', axis=1).to_sql('death_output', cnx, if_exists='append', index_label='id')
-        # attached_file.to_sql('death_attached_files', cnx, if_exists='append', index_label='id')
+        attached_file.to_sql('death_attached_files', cnx, if_exists='append', index_label='id')
     if save_to_excel:
         # with pd.ExcelWriter(f'{results_files_path}death_3monthgrow_{results_files_suff}.xlsx', engine='openpyxl') as writer:
         #     df_Results.to_excel(writer, sheet_name=f'3monthgrow', header=True, index=False, encoding='1251')
-        with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[2][0]}{results_files_suff}.xlsx',
-                            engine='openpyxl') as writer:
-            results_blowout.to_excel(writer, sheet_name=f'3monthgrow_выбросы', header=True, index=False, encoding='1251')
-        with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[2][2]}{results_files_suff}.xlsx',
-                            engine='openpyxl') as writer:
-            output.to_excel(writer, sheet_name=f'3monthgrow', header=True, index=False, encoding='1251')
-        # with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[2][3]}{results_files_suff}.xlsx',
-        #                     engine='openpyxl') as writer:
+        with pd.ExcelWriter(f'{results_files_path}{file_path1}', engine='openpyxl') as writer:
+            results_blowout.to_excel(writer, sheet_name=f'3monthgrow', header=True, index=False, encoding='1251')
+        # with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[2][2]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
+        #     output.to_excel(writer, sheet_name=f'3monthgrow_output', header=True, index=False, encoding='1251')
+        # with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[2][3]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
         #     attached_file.to_excel(writer, sheet_name=f'attached_file_3monthgrow', header=True, index=False, encoding='1251')
 ########################################################################################################################
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
@@ -305,35 +319,44 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
                          }
         k += 1
 ########################################################################################################################
-    # attached_file = pd.DataFrame(columns=['uuid', 'task_uuid', 'file_title', 'file_path'])
-    # k = get_db_last_index('death_attached_files')
-    # for i in output.index:
-    #     mo = output.loc[i, 'mo']
-    #     uuid_ = output.loc[i, 'uuid']
-    #
-    #     attached_file.loc[k] = {'task_uuid': uuid_,
-    #                             'file': f'{attached_file_names_dict[3][0]}{results_files_suff}.xlsx'}
-    #     attached_file.loc[k + 1] = {'task_uuid': uuid_,
-    #                                 'file': f'{attached_file_names_dict[3][1]}{results_files_suff}.html'}
-    #     attached_file.loc[k + 2] = {'task_uuid': uuid_,
-    #                                 'file': f'{attached_file_names_dict[3][1]}{mo}_{results_files_suff}.html'}
-    #     k += 3
+    attached_file = pd.DataFrame(columns=['uuid', 'task_uuid', 'file_title', 'file_path'])
+    k = get_db_last_index('death_attached_files')
+    for i in output.index:
+        mo = output.loc[i, 'mo']
+        task_uuid = output.loc[i, 'uuid']
+        file_title1 = f'{attached_file_names_dict[3][0]}{results_files_suff}'
+        file_title2 = f'{attached_file_names_dict[3][1]}{results_files_suff}'
+        file_title3 = f'{attached_file_names_dict[3][1]}{mo}_{results_files_suff}'
+        file_path1 = str(uuid.uuid3(uuid.NAMESPACE_DNS, f'{file_title1}').hex)+'.xlsx'
+        file_path2 = str(uuid.uuid3(uuid.NAMESPACE_DNS, f'{file_title2}').hex)+'.html'
+        file_path3 = str(uuid.uuid3(uuid.NAMESPACE_DNS, f'{file_title3}').hex)+'.html'
+
+        attached_file.loc[k] = {'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, str(task_uuid)+file_path1),
+                                'task_uuid': task_uuid,
+                                'file_title': file_title1,
+                                'file_path': file_path1}
+        attached_file.loc[k + 1] = {'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, str(task_uuid)+file_path2),
+                                    'task_uuid': task_uuid,
+                                    'file_title': file_title2,
+                                    'file_path': file_path2}
+        attached_file.loc[k + 2] = {'uuid': uuid.uuid3(uuid.NAMESPACE_DNS, str(task_uuid)+file_path3),
+                                    'task_uuid': task_uuid,
+                                    'file_title': file_title3,
+                                    'file_path': file_path3}
+        k += 3
 ########################################################################################################################
     print('Сохраняем результаты...')
     if save_to_sql:
         output.drop('mo', axis=1).to_sql('death_output', cnx, if_exists='append', index_label='id')
-        # attached_file.to_sql('death_attached_files', cnx, if_exists='append', index_label='id')
+        attached_file.to_sql('death_attached_files', cnx, if_exists='append', index_label='id')
     if save_to_excel:
         # with pd.ExcelWriter(f'{results_files_path}death_sameperiod_{results_files_suff}.xlsx', engine='openpyxl') as writer:
         #     df_Results.to_excel(writer, sheet_name=f'sameperiod', header=True, index=False, encoding='1251')
-        with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[3][0]}{results_files_suff}.xlsx',
-                            engine='openpyxl') as writer:
-            results_blowout.to_excel(writer, sheet_name=f'sameperiod_выбросы', header=True, index=False, encoding='1251')
-        with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[3][2]}{results_files_suff}.xlsx',
-                            engine='openpyxl') as writer:
-            output.to_excel(writer, sheet_name=f'sameperiod_output', header=True, index=False, encoding='1251')
-        # with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[3][3]}{results_files_suff}.xlsx',
-        #                     engine='openpyxl') as writer:
+        with pd.ExcelWriter(f'{results_files_path}{file_path1}', engine='openpyxl') as writer:
+            results_blowout.to_excel(writer, sheet_name=f'sameperiod', header=True, index=False, encoding='1251')
+        # with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[3][2]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
+        #     output.to_excel(writer, sheet_name=f'sameperiod_output', header=True, index=False, encoding='1251')
+        # with pd.ExcelWriter(f'{results_files_path}{attached_file_names_dict[3][3]}{results_files_suff}.xlsx', engine='openpyxl') as writer:
         #     attached_file.to_excel(writer, sheet_name=f'attached_file_sameperiod', header=True, index=False, encoding='1251')
 ########################################################################################################################
     print(f'{program} done. elapsed time {datetime.now() - start_time}')
@@ -346,4 +369,4 @@ def death_rule_second_new(save_to_sql=True, save_to_excel=True):
 if __name__ == '__main__':
     logging.basicConfig(filename='logfile.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s',
                         level=logging.INFO)
-    death_rule_second_new(save_to_sql=True, save_to_excel=False)
+    death_rule_second_new(save_to_sql=True, save_to_excel=True)
