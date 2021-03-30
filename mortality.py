@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 from preprocessing import death_preprocessing
+from preprocessing_three_month import death_preprocessing_three_month
 from death_rule_first_55 import death_rule_first_55
 from death_rule_second import death_rule_second_new
 from death_escalation import death_escalation
@@ -16,7 +17,8 @@ if __name__ == '__main__':
 
     try:
         print('The month is over. Start forming tasks ...')
-        death_preprocessing(save_to_sql=True, save_to_excel=False)
+        # death_preprocessing(save_to_sql=True, save_to_excel=False)
+        death_preprocessing_three_month(save_to_sql=True, save_to_excel=False)
         death_rule_first_55(save_to_sql=True, save_to_excel=True)
         death_rule_second_new(save_to_sql=True, save_to_excel=True)
         death_escalation(save_to_sql=True, save_to_excel=False)
