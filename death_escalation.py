@@ -162,3 +162,16 @@ if __name__ == '__main__':
     logging.basicConfig(filename='logfile.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s',
                         level=logging.INFO)
     death_escalation(save_to_sql=False, save_to_excel=True)
+
+    # df_task_list = pd.read_sql_query(
+    #     '''SELECT "recipient_uuid", "message", "release", "task_type_uuid" FROM public."death_output"''', cnx)
+    # print(df_task_list.head())
+    # original_recipient_uuid = df_task_list.loc[0, 'recipient_uuid']
+    # original_recipient = get_key(FIO_dict, original_recipient_uuid)
+    # print(original_recipient)
+    #
+    # original_recipient_list = [get_key(FIO_dict, original_recipient_uuid) for original_recipient_uuid in
+    #                            df_task_list.recipient_uuid.values]
+    # original_recipient = ', '.join(original_recipient_list)
+    # print(original_recipient)
+    pass
