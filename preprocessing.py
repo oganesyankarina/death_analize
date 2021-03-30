@@ -75,10 +75,10 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
     df_death.index = [x for x in range(1, len(df_death)+1)]
 ########################################################################################################################
     if save_to_sql:
-        # Сохраняем предобработанные данные в БД
         print('Сохраняем данные в базу данных')
-        df_death.to_sql('death_finished', cnx, if_exists='replace', index_label='id',
-                        dtype=column_name_type_death_finished)
+        df_death.to_sql('death_finished', cnx, if_exists='append', index=False,
+                        # dtype=column_name_type_death_finished
+                        )
     if save_to_excel:
         print('Сохраняем данные в файл')
         with pd.ExcelWriter(f'{results_files_path}death_finished_{results_files_suff}.xlsx', engine='openpyxl') as writer:
@@ -93,5 +93,4 @@ def death_preprocessing(save_to_sql=True, save_to_excel=False):
 if __name__ == '__main__':
     logging.basicConfig(filename='logfile.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s',
                         level=logging.INFO)
-
     df = death_preprocessing(save_to_sql=False, save_to_excel=True)
