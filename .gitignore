@@ -1,3 +1,5 @@
+*.ipynb
+
 # Created by .ignore support plugin (hsz.mobi)
 ### Example user template template
 ### Example user template
@@ -246,3 +248,7 @@ ipython_config.py
 #   git rm -r .ipynb_checkpoints/
 
 
+
+Графики/
+
+attached_files/
