@@ -240,3 +240,6 @@ if __name__ == '__main__':
 
     df_death_finished, YEARS, MONTHS, DATES, GENDERS, AGE_GROUPS = get_df_death_finished()
     print(YEARS, MONTHS, DATES[-3:], GENDERS, AGE_GROUPS)
+
+    with pd.ExcelWriter(f'death_{DATES[-1]}.xlsx', engine='openpyxl') as writer:
+        df_death_finished.to_excel(writer, sheet_name=f'death', header=True, index=False, encoding='1251')
