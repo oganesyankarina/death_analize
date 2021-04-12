@@ -252,3 +252,5 @@ ipython_config.py
 Графики/
 
 attached_files/
+
+connect_PostGres.py

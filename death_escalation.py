@@ -95,7 +95,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
         # Предупреждение для первоначального исполнителя
         fio = make_recipient_fio(original_recipient)
         message = f'ИСУ предупреждение Ваша задача эскалирована на уровень - {escalation_recipient}. Задача: {message_insert}. Задача повторяется {escalation_level + 1} месяца подряд.'
-        title = f'Ваша задача эскалирована на уровень - {escalation_recipient}.'
+        title = f'Ваша задача эcкалирована на уровень - {escalation_recipient}'
         output.loc[k] = {'recipient_uuid': original_recipient_uuid,
                          'message': message,
                          'deadline': str(date.today() + pd.Timedelta(days=14)),
@@ -161,7 +161,7 @@ def death_escalation(save_to_sql=True, save_to_excel=False):
 if __name__ == '__main__':
     logging.basicConfig(filename='logfile.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s',
                         level=logging.INFO)
-    death_escalation(save_to_sql=False, save_to_excel=True)
+    death_escalation(save_to_sql=True, save_to_excel=True)
 
     # df_task_list = pd.read_sql_query(
     #     '''SELECT "recipient_uuid", "message", "release", "task_type_uuid" FROM public."death_output"''', cnx)
